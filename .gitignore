@@ -1,0 +1,17 @@
+# Environment variables — never commit real credentials
+.env
+env
+
+# Student submission directories and graded output
+lab-*/
+*_grades.csv
+
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+
+# OS artifacts
+.DS_Store
+Thumbs.db
