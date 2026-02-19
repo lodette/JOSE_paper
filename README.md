@@ -21,16 +21,19 @@ Solution .qmd ─┘
 
 ```
 .
-├── batch_grade.py            # Entry point — grades all students for a lab
-├── grade_student.py          # Grades a single student .qmd file
-├── grading_context.py        # Loads rubric, templates, and builds API messages
-├── grader_instructions.txt   # System prompt for the LLM grader
-├── rubric_lab_<N>.json       # Per-question rubric (one file per lab)
-├── BSMM_8740_lab_<N>_starter.qmd    # Starter template distributed to students
-├── BSMM_8740_lab_<N>_solutions.qmd  # Instructor solution
-├── .env.example              # Template for required environment variables
+├── batch_grade.py                   # Entry point — grades all students for a lab
+├── grade_student.py                 # Grades a single student .qmd file
+├── grading_context.py               # Loads rubric, templates, and builds API messages
+├── grader_instructions.txt          # System prompt for the LLM grader
+├── rubric_lab_<N>.json              # Per-question rubric (one file per lab)
+├── BSMM_8740_lab_<N>_starter.qmd   # Starter template distributed to students
+├── BSMM_8740_lab_<N>_solutions.qmd # Instructor solution
+├── 2025-lab-9.qmd                  # Sample anonymized student submission (Lab 9)
+├── .env.example                    # Template for required environment variables
 └── .gitignore
 ```
+
+> `2025-lab-9.qmd` is an **anonymized sample student submission** included to illustrate the expected input format for the grader. It is not tied to any real student and can be used to test the pipeline end-to-end.
 
 > Student submission folders and generated CSV files are excluded from version control via `.gitignore`.
 

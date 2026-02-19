@@ -1,7 +1,7 @@
 ---
 title: "lab 9 - Monte Carlo Methods"
 subtitle: "BSMM 8740 Fall 2025"
-author: "Add your name here"
+author: "Sample Student"
 format: html
 editor: visual
 self-contained: true
@@ -22,8 +22,8 @@ In today's lab, you'll practice sampling from distributions and working with Mar
 ::: callout-important
 To access Github from the lab, you will need to make sure you are logged in as follows:
 
--   username: **.\\daladmin**
--   password: **Business507!**
+-   username: **[lab username]**
+-   password: **[lab password]**
 
 Remember to (create a PAT and set your git credentials)
 
