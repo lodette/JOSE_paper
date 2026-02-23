@@ -12,12 +12,14 @@
 dotenv::load_dot_env()   # expects OPENAI_API_KEY in .env
 # install.packages(c("fs","jsonlite","stringr","readr","httr2"))
 
+source("./R/oaii_grading_assistant.R")
+
 # -------------------
 # Config
 # -------------------
-CONFIG_JSON    <- "./Lab 3 Grades and Meeting Availability/lab_3_code/assistant_config.json"
-directory_path <- paste0(getwd(),"/lab-3")
-output_csv     <- paste0(directory_path,"/r_lab3_grades.csv")
+CONFIG_JSON    <- "./assignment/assistant_config.json"
+directory_path <- paste0(getwd(),"/assignment")
+output_csv     <- paste0(directory_path,"/r_lab9_grades.csv")
 # -------------------
 # Load assistant and file IDs
 # -------------------
@@ -258,13 +260,13 @@ all_entries <- list.dirs(directory_path, full.names = TRUE, recursive = FALSE)
 subdirs <- all_entries[file.info(all_entries)$isdir %in% TRUE]
 
 for (folder in subdirs) { #folder = subdirs[20]
-  student_file <- file.path(folder, "2025-lab-3.qmd")
+  student_file <- file.path(folder, "2025-lab-9.qmd")
   if (!file.exists(student_file)) {
     message("Skipping ", basename(folder), ". Missing 2025-lab-3.qmd")
     next
   }
 
-  student_name <- stringr::str_remove(basename(folder), "(?i)^2025-lab-3_")
+  student_name <- stringr::str_remove(basename(folder), "(?i)^2025-lab-9_")
   student_text <- readChar(student_file, nchars = file.info(student_file)$size, useBytes = TRUE)
 
   prompt <- paste0(

@@ -1,6 +1,5 @@
 # ======================================================================
 # Grading Assistant (R with oaii Assistants API)
-# - Loads .env
 # - Renders solution.qmd to GitHub Flavored Markdown
 # - Uploads rubric, solution, starter as assistant files
 # - Creates an Assistant with file_search tool
@@ -8,15 +7,14 @@
 # ======================================================================
 
 # Packages
-# dotenv::load_dot_env()   # reads .env in the working directory
 # install.packages("oaii")   # if needed
 
 # ---- config ----
 # ---- paths ----
-RUBRIC_PATH  <- "./Lab 3 Grades and Meeting Availability/lab_3_code/rubric.json"
-SOLUTION_QMD <- "./Lab 3 Grades and Meeting Availability/lab_3_code/BSMM_8740_lab_3_solutions.qmd"
-STARTER_FILE <- "./Lab 3 Grades and Meeting Availability/lab_3_code/BSMM_8740_lab_3_starter.qmd"
-CONFIG_JSON  <- "./Lab 3 Grades and Meeting Availability/lab_3_code/assistant_config.json"
+RUBRIC_PATH  <- "./assignment/rubric_lab_9.json"
+SOLUTION_QMD <- "./assignment/BSMM_8740_lab_9_solutions.qmd"
+STARTER_FILE <- "./assignment/BSMM_8740_lab_9_starter.qmd"
+CONFIG_JSON  <- "./assignment/assistant_config.json"
 
 # ---- helper: render .qmd to .md beside the input, then move to temp ----
 qmd_to_temp_md <- function(qmd_path) {
@@ -107,7 +105,7 @@ main <- function() {
   # create assistantwith file_search tool
   assistant <- create_assistant_v2(
     model        = "gpt-4.1-mini",
-    name         = "BSMM 8740 Lab 3 Grading Assistant",
+    name         = "BSMM 8740 Lab 9 Grading Assistant",
     instructions = paste0(
       "You grade lab submissions using the rubric and the rendered solution. ",
       "Search attached files and cite sources where helpful."

@@ -114,6 +114,7 @@ What percent of customers remain once the chain has reached the steady state?
 
 ```{r}
 #| echo: true
+#| eval: false
 #| label: build the state transition matrix for customer churn with 2 states, subscriber and non-subscriber
 # replace the placeholders '_' with the state transition probabilities
 P <- 
@@ -127,6 +128,7 @@ P <-
 
 ```{r}
 #| echo: true
+#| eval: false
 #| label: calculate the stationary distribution between subscriber and non-subscriber for this model
 # compute transpose(I-P) and add a row of 1's to the bottom 
 # call the resulting matrix A
