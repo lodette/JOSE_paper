@@ -11,9 +11,9 @@
 
 # ---- config ----
 # ---- paths ----
-RUBRIC_PATH  <- "./assignment/rubric_lab_9.json"
-SOLUTION_QMD <- "./assignment/BSMM_8740_lab_9_solutions.qmd"
-STARTER_FILE <- "./assignment/BSMM_8740_lab_9_starter.qmd"
+RUBRIC_PATH  <- stringr::str_glue("./assignment/rubric_lab_{LAB_NUMBER}.json")
+SOLUTION_QMD <- stringr::str_glue("./assignment/BSMM_8740_lab_{LAB_NUMBER}_solutions.qmd")
+STARTER_FILE <- stringr::str_glue("./assignment/BSMM_8740_lab_{LAB_NUMBER}_starter.qmd")
 CONFIG_JSON  <- "./assignment/assistant_config.json"
 
 # ---- helper: render .qmd to .md beside the input, then move to temp ----

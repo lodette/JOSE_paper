@@ -9,9 +9,10 @@
 # ======================================================================
 
 # ---- deps ----
-dotenv::load_dot_env()   # expects OPENAI_API_KEY in .env
+# dotenv::load_dot_env()   # expects OPENAI_API_KEY in .env
 # install.packages(c("fs","jsonlite","stringr","readr","httr2"))
 
+LAB_NUMBER <- 9
 source("./R/oaii_grading_assistant.R")
 
 # -------------------
@@ -32,6 +33,14 @@ starter_file_id    <- cfg[["starter_file_id"]]
 # -------------------
 # Assistants v2 helpers using httr2
 # -------------------
+
+#' openai_req - create an OpenAI HTTP request object with authorization
+#'
+#' @param path string added to OpenAI URL
+#'
+#' @returns An HTTP request
+#'
+#' @examples
 openai_req <- function(path) {
   key <- Sys.getenv("OPENAI_API_KEY", unset = NA_character_)
   if (is.na(key) || !nzchar(key)) stop("OPENAI_API_KEY is not set.")
@@ -42,7 +51,12 @@ openai_req <- function(path) {
     )
 }
 
-create_thread_v2 <- function() {
+#' create_thread - extend OpenAI HTTP request object, defining behaviour
+#'
+#' @returns An HTTP request
+#'
+#' @examples
+create_thread <- function() {
   resp <- openai_req("/threads") |>
     httr2::req_headers("Content-Type" = "application/json") |>
     httr2::req_body_json(list(), auto_unbox = TRUE) |>
@@ -51,7 +65,17 @@ create_thread_v2 <- function() {
   httr2::resp_body_json(resp, simplifyVector = TRUE)
 }
 
-add_message_v2 <- function(thread_id, content, role = "user", attachments = NULL) {
+#' add_message - extend OpenAI HTTP request object with message content
+#'
+#' @param thread_id
+#' @param content
+#' @param role
+#' @param attachments
+#'
+#' @returns
+#'
+#' @examples
+add_message <- function(thread_id, content, role = "user", attachments = NULL) {
   body <- list(
     role = role,
     content = content,
@@ -65,7 +89,16 @@ add_message_v2 <- function(thread_id, content, role = "user", attachments = NULL
   httr2::resp_body_json(resp, simplifyVector = TRUE)
 }
 
-start_run_v2 <- function(thread_id, assistant_id) {
+#' start_run -
+#'
+#' @param thread_id
+#' @param assistant_id
+#'
+#' @returns
+#' @export
+#'
+#' @examples
+start_run <- function(thread_id, assistant_id) {
   body <- list(assistant_id = assistant_id)
   resp <- openai_req(sprintf("/threads/%s/runs", thread_id)) |>
     httr2::req_headers("Content-Type" = "application/json") |>
@@ -75,24 +108,32 @@ start_run_v2 <- function(thread_id, assistant_id) {
   httr2::resp_body_json(resp, simplifyVector = TRUE)
 }
 
-retrieve_run_v2 <- function(thread_id, run_id) {
+#' retrieve_run
+#'
+#' @param thread_id
+#' @param run_id
+#'
+#' @returns
+#'
+#' @examples
+retrieve_run <- function(thread_id, run_id) {
   resp <- openai_req(sprintf("/threads/%s/runs/%s", thread_id, run_id)) |>
     httr2::req_perform()
   httr2::resp_check_status(resp)
   httr2::resp_body_json(resp, simplifyVector = TRUE)
 }
 
-list_messages_v2 <- function(thread_id, order = "desc", limit = 15) {
+list_messages <- function(thread_id, order = "desc", limit = 15) {
   resp <- openai_req(sprintf("/threads/%s/messages?order=%s&limit=%d", thread_id, order, limit)) |>
     httr2::req_perform()
   httr2::resp_check_status(resp)
   httr2::resp_body_json(resp, simplifyVector = FALSE)
 }
 
-wait_run_complete_v2 <- function(thread_id, run_id, sleep_seconds = 0.7, timeout_seconds = 180) {
+wait_run_complete <- function(thread_id, run_id, sleep_seconds = 0.7, timeout_seconds = 180) {
   t0 <- Sys.time()
   repeat {
-    run <- retrieve_run_v2(thread_id, run_id)
+    run <- retrieve_run(thread_id, run_id)
     s <- run$status
     if (s %in% c("completed", "failed", "cancelled", "expired")) return(run)
     if (as.numeric(difftime(Sys.time(), t0, units = "secs")) > timeout_seconds) {
@@ -103,7 +144,7 @@ wait_run_complete_v2 <- function(thread_id, run_id, sleep_seconds = 0.7, timeout
 }
 
 latest_assistant_text <- function(thread_id) {
-  msgs <- list_messages_v2(thread_id, order = "desc", limit = 15)
+  msgs <- list_messages(thread_id, order = "desc", limit = 15)
   data <- msgs[["data"]]
   if (is.null(data)) return("")
   for (m in data) {
@@ -270,7 +311,7 @@ for (folder in subdirs) { #folder = subdirs[20]
   student_text <- readChar(student_file, nchars = file.info(student_file)$size, useBytes = TRUE)
 
   prompt <- paste0(
-    "Grade the following student submission for Regression Modeling Lab 3 using the uploaded rubric, ",
+    "Grade the following student submission using the uploaded rubric, ",
     "reference solution, and starter file. Follow the rubric strictly and return JSON only ",
     "with per-exercise grades and feedback and the total.\n\n",
     "Your JSON schema SHOULD be one of.\n",
@@ -298,7 +339,7 @@ for (folder in subdirs) { #folder = subdirs[20]
   )
 
   # thread
-  thread <- create_thread_v2()
+  thread <- create_thread()
 
   # message with attachments for file_search
   attachments <- list(
@@ -307,13 +348,13 @@ for (folder in subdirs) { #folder = subdirs[20]
     list(file_id = starter_file_id,  tools = list(list(type = "file_search")))
   )
 
-  invisible(add_message_v2(thread_id = thread$id, content = prompt, role = "user", attachments = attachments))
+  invisible(add_message(thread_id = thread$id, content = prompt, role = "user", attachments = attachments))
 
   # run
-  run <- start_run_v2(thread_id = thread$id, assistant_id = assistant_id)
+  run <- start_run(thread_id = thread$id, assistant_id = assistant_id)
 
   # poll with timeout
-  final_run <- wait_run_complete_v2(thread_id = thread$id, run_id = run$id, sleep_seconds = 0.7, timeout_seconds = 180)
+  final_run <- wait_run_complete(thread_id = thread$id, run_id = run$id, sleep_seconds = 0.7, timeout_seconds = 180)
 
   if (!identical(final_run$status, "completed")) {
     empty_row <- as.list(stats::setNames(rep(list(NA_real_), length(Q_COLS)), Q_COLS))
