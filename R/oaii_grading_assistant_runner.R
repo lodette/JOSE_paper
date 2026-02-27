@@ -44,11 +44,19 @@ starter_file_id    <- cfg[["starter_file_id"]]
 # Assistants helpers using httr2
 # -------------------
 
-#' openai_req - create an OpenAI HTTP request object with authorization
+#' Build an authenticated OpenAI Assistants v2 request
 #'
-#' @param path string added to OpenAI URL
+#' Constructs an \code{httr2} request object targeting the OpenAI v1 API,
+#' pre-populated with a Bearer token from the \code{OPENAI_API_KEY} environment
+#' variable and the \code{OpenAI-Beta: assistants=v2} header required by the
+#' Assistants API.
 #'
-#' @returns An HTTP request
+#' @param path Character. The API path to append to
+#'   \code{https://api.openai.com/v1}, e.g. \code{"/threads"} or
+#'   \code{"/threads/{id}/runs"}.
+#'
+#' @returns An \code{httr2_request} object ready for further modification (e.g.
+#'   adding a body) and execution via \code{httr2::req_perform()}.
 #'
 #' @examples
 openai_req <- function(path) {
@@ -61,9 +69,14 @@ openai_req <- function(path) {
     )
 }
 
-#' create_thread - extend OpenAI HTTP request object, defining behaviour
+#' Create a new OpenAI Assistants v2 thread
 #'
-#' @returns returns NULL, an atomic vector, or list
+#' Sends a \code{POST /threads} request to the OpenAI Assistants API to create
+#' an empty conversation thread. A new thread should be created for each student
+#' so that grading contexts remain isolated.
+#'
+#' @returns A named list representing the created thread object, including at
+#'   minimum \code{$id} (the thread ID string used in subsequent API calls).
 #'
 #' @examples
 create_thread <- function() {
@@ -75,14 +88,27 @@ create_thread <- function() {
   httr2::resp_body_json(resp, simplifyVector = TRUE)
 }
 
-#' add_message - extend OpenAI HTTP request object with message content
+#' Add a message to an OpenAI Assistants v2 thread
 #'
-#' @param thread_id
-#' @param content
-#' @param role
-#' @param attachments
+#' Sends a \code{POST /threads/{thread_id}/messages} request to append a message
+#' to an existing thread. In the grading workflow this is used to inject the
+#' student submission along with file attachments (rubric, solution, starter)
+#' that the assistant can search via \code{file_search}.
 #'
-#' @returns returns NULL, an atomic vector, or list
+#' @param thread_id Character. The ID of the thread to add the message to,
+#'   as returned by \code{create_thread()$id}.
+#' @param content Character. The text content of the message (e.g. the grading
+#'   prompt including the student submission).
+#' @param role Character. The role of the message author. Defaults to
+#'   \code{"user"}; the Assistants API also accepts \code{"assistant"}.
+#' @param attachments List or \code{NULL}. Optional list of file attachment
+#'   objects, each with elements \code{file_id} (character) and \code{tools}
+#'   (list specifying which tools can access the file, e.g.
+#'   \code{list(list(type = "file_search"))}). Pass \code{NULL} for no
+#'   attachments.
+#'
+#' @returns A named list representing the created message object as returned by
+#'   the API, including its \code{$id}, \code{$role}, and \code{$content}.
 #'
 #' @examples
 add_message <- function(thread_id, content, role = "user", attachments = NULL) {
@@ -99,12 +125,20 @@ add_message <- function(thread_id, content, role = "user", attachments = NULL) {
   httr2::resp_body_json(resp, simplifyVector = TRUE)
 }
 
-#' start_run - create OpenAI HTTP request to set up thread with assistants
+#' Start an assistant run on an OpenAI Assistants v2 thread
 #'
-#' @param thread_id
-#' @param assistant_id
+#' Sends a \code{POST /threads/{thread_id}/runs} request to trigger the
+#' assistant to process the thread's messages. Runs are asynchronous; use
+#' \code{wait_run_complete()} to poll until the run reaches a terminal state.
 #'
-#' @returns returns NULL, an atomic vector, or list
+#' @param thread_id Character. The ID of the thread to run the assistant on,
+#'   as returned by \code{create_thread()$id}.
+#' @param assistant_id Character. The ID of the assistant to use, as stored in
+#'   \code{assistant_config.json} by \code{oaii_grading_assistant.R}.
+#'
+#' @returns A named list representing the run object, including at minimum
+#'   \code{$id} (the run ID) and \code{$status} (initially \code{"queued"} or
+#'   \code{"in_progress"}).
 #'
 #' @examples
 start_run <- function(thread_id, assistant_id) {
@@ -117,12 +151,20 @@ start_run <- function(thread_id, assistant_id) {
   httr2::resp_body_json(resp, simplifyVector = TRUE)
 }
 
-#' retrieve_run
+#' Retrieve the current status of an OpenAI Assistants v2 run
 #'
-#' @param thread_id
-#' @param run_id
+#' Sends a \code{GET /threads/{thread_id}/runs/{run_id}} request to fetch the
+#' latest state of a run. Intended to be called repeatedly inside a polling
+#' loop; prefer \code{wait_run_complete()} for blocking until completion.
 #'
-#' @returns returns NULL, an atomic vector, or list
+#' @param thread_id Character. The ID of the thread that owns the run.
+#' @param run_id Character. The ID of the run to retrieve, as returned by
+#'   \code{start_run()$id}.
+#'
+#' @returns A named list representing the run object. The \code{$status} element
+#'   reflects the current state: one of \code{"queued"}, \code{"in_progress"},
+#'   \code{"completed"}, \code{"failed"}, \code{"cancelled"}, or
+#'   \code{"expired"}.
 #'
 #' @examples
 retrieve_run <- function(thread_id, run_id) {
@@ -132,13 +174,24 @@ retrieve_run <- function(thread_id, run_id) {
   httr2::resp_body_json(resp, simplifyVector = TRUE)
 }
 
-#' list_messages - get messages
+#' List messages in an OpenAI Assistants v2 thread
 #'
-#' @param thread_id
-#' @param order
-#' @param limit
+#' Sends a \code{GET /threads/{thread_id}/messages} request to retrieve recent
+#' messages from a thread. Returns results as a raw (non-simplified) list so
+#' that nested content blocks are preserved for extraction by
+#' \code{latest_assistant_text()}.
 #'
-#' @returns returns NULL, an atomic vector, or list
+#' @param thread_id Character. The ID of the thread whose messages to list.
+#' @param order Character. Sort order for messages by creation time. Either
+#'   \code{"desc"} (newest first, the default) or \code{"asc"} (oldest first).
+#' @param limit Integer. Maximum number of messages to return. Defaults to
+#'   \code{15}.
+#'
+#' @returns A named list representing the API page object, with a \code{$data}
+#'   element containing a list of message objects. Each message object includes
+#'   \code{$role} (\code{"user"} or \code{"assistant"}) and \code{$content}
+#'   (a list of typed content blocks, e.g. \code{list(type = "text", text =
+#'   list(value = "..."))}).
 #'
 #' @examples
 list_messages <- function(thread_id, order = "desc", limit = 15) {
@@ -148,14 +201,26 @@ list_messages <- function(thread_id, order = "desc", limit = 15) {
   httr2::resp_body_json(resp, simplifyVector = FALSE)
 }
 
-#' wait_run_complete
+#' Poll an OpenAI Assistants v2 run until it reaches a terminal state
 #'
-#' @param thread_id
-#' @param run_id
-#' @param sleep_seconds
-#' @param timeout_seconds
+#' Repeatedly calls \code{retrieve_run()} at a fixed interval until the run
+#' status is one of \code{"completed"}, \code{"failed"}, \code{"cancelled"}, or
+#' \code{"expired"}, or until the timeout is exceeded. This is a blocking call;
+#' script execution is suspended between polls via \code{Sys.sleep()}.
 #'
-#' @returns
+#' @param thread_id Character. The ID of the thread that owns the run.
+#' @param run_id Character. The ID of the run to poll, as returned by
+#'   \code{start_run()$id}.
+#' @param sleep_seconds Numeric. Seconds to wait between status checks.
+#'   Defaults to \code{0.7}.
+#' @param timeout_seconds Numeric. Maximum total seconds to wait before
+#'   returning regardless of status. Defaults to \code{180}. The returned run
+#'   object should be inspected for a non-\code{"completed"} status when the
+#'   timeout is reached.
+#'
+#' @returns A named list representing the final run object at the point the
+#'   function returned. Check \code{$status} to distinguish a successful
+#'   completion (\code{"completed"}) from a timeout or failure.
 #'
 #' @examples
 wait_run_complete <- function(thread_id, run_id, sleep_seconds = 0.7, timeout_seconds = 180) {
@@ -171,11 +236,19 @@ wait_run_complete <- function(thread_id, run_id, sleep_seconds = 0.7, timeout_se
   }
 }
 
-#' latest_assistant_text
+#' Extract the most recent assistant text reply from a thread
 #'
-#' @param thread_id
+#' Retrieves the thread's message list (newest first) and returns the
+#' concatenated text content of the first message whose role is
+#' \code{"assistant"}. Only \code{"text"} content blocks are included;
+#' any image or file-citation blocks are ignored.
 #'
-#' @returns
+#' @param thread_id Character. The ID of the thread to query.
+#'
+#' @returns A length-1 character string containing the assistant's reply text,
+#'   with multiple text content blocks joined by \code{"\n"}. Returns an empty
+#'   string (\code{""}) if no assistant message is found or if the thread
+#'   contains no messages.
 #' @export
 #'
 #' @examples
@@ -207,11 +280,19 @@ latest_assistant_text <- function(thread_id) {
 Q_COUNT <- 10L
 Q_COLS  <- paste0("Q", 1:Q_COUNT)
 
-#' extract_qnum
+#' Extract a question number from a key or label string
 #'
-#' @param key_or_value
+#' Parses common question-label formats produced by the LLM (e.g. \code{"Q1"},
+#' \code{"q1"}, \code{"question_1"}, \code{"Question 3"}, or a bare integer
+#' string like \code{"7"}) and returns the corresponding integer. Returns
+#' \code{NA_integer_} for strings that cannot be mapped to a valid question
+#' number within the range \code{1:Q_COUNT}.
 #'
-#' @returns
+#' @param key_or_value Character, integer, or \code{NULL}. The label to parse.
+#'   \code{NULL} is treated as a missing value and returns \code{NA_integer_}.
+#'
+#' @returns An integer in \code{1:Q_COUNT} if a valid question number is found,
+#'   otherwise \code{NA_integer_}.
 #'
 #' @examples
 extract_qnum <- function(key_or_value) {
@@ -235,11 +316,19 @@ extract_qnum <- function(key_or_value) {
   NA_integer_
 }
 
-#' coerce_float
+#' Safely coerce a value to a numeric (double)
 #'
-#' @param x
+#' Attempts to convert \code{x} to a numeric value, suppressing the warning
+#' that \code{as.numeric()} would otherwise emit on non-coercible inputs.
+#' Intended for converting LLM-returned grade values that may be numeric,
+#' integer, or character strings.
 #'
-#' @returns
+#' @param x A scalar value of any type (typically numeric, integer, or
+#'   character).
+#'
+#' @returns A length-1 double. Returns \code{NA_real_} if \code{x} cannot be
+#'   coerced to a number (e.g. \code{NULL}, \code{NA}, or a non-numeric
+#'   string).
 #' @export
 #'
 #' @examples
@@ -249,12 +338,34 @@ coerce_float <- function(x) {
   v
 }
 
-#' parse_reply_to_row
+#' Parse an LLM grading reply into a single-row named list
 #'
-#' @param reply_text
-#' @param student_name
+#' Accepts the raw text returned by the grading assistant and attempts to
+#' extract per-question grades and feedback into a flat named list suitable for
+#' binding into a data frame. Handles three JSON schemas that the model may
+#' produce: (1) a named \code{questions} object keyed by \code{"Q1"} through
+#' \code{"Q10"}, (2) an array of question objects each with a \code{"question"}
+#' key, and (3) a flat top-level object with question-keyed entries. If JSON
+#' parsing fails entirely, the row is returned with all grade columns set to
+#' \code{NA} and the raw reply truncated into the \code{Comments} field.
 #'
-#' @returns
+#' @param reply_text Character. The raw text content of the assistant's reply,
+#'   expected to be a JSON string but handled defensively if not.
+#' @param student_name Character. The student identifier to populate the
+#'   \code{Student} column of the returned row.
+#'
+#' @returns A named list with the following elements:
+#'   \describe{
+#'     \item{\code{Student}}{Character. The value of \code{student_name}.}
+#'     \item{\code{Q1} through \code{Q10}}{Numeric (double). The grade for each
+#'       question, or \code{NA_real_} if not found.}
+#'     \item{\code{Total}}{Numeric (double). The overall total grade reported
+#'       by the model, or \code{NA_real_} if absent.}
+#'     \item{\code{Comments}}{Character. Per-question feedback strings
+#'       concatenated with \code{" | "} as separator, or a parse-error message
+#'       if JSON parsing failed, or \code{NA_character_} if no feedback was
+#'       provided.}
+#'   }
 #' @export
 #'
 #' @examples
@@ -333,6 +444,16 @@ parse_reply_to_row <- function(reply_text, student_name) {
   row
 }
 
+#' Null-coalescing operator
+#'
+#' Returns \code{a} if it is not \code{NULL}, otherwise returns \code{b}.
+#' Useful for providing fallback values when extracting fields from loosely
+#' structured lists (e.g. LLM JSON responses where field names may vary).
+#'
+#' @param a An R object. Returned as-is if not \code{NULL}.
+#' @param b An R object. Returned when \code{a} is \code{NULL}.
+#'
+#' @returns \code{a} if \code{!is.null(a)}, otherwise \code{b}.
 `%||%` <- function(a, b) if (!is.null(a)) a else b
 
 # -------------------
