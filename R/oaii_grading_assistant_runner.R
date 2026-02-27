@@ -1,6 +1,6 @@
 # ======================================================================
 # Grading Assistant runner in R
-# - Loads .env
+# - Reads key from .Renviron
 # - Reads assistant_config.json for IDs
 # - Walks student folders
 # - Creates a thread per student, attaches rubric, solution, starter
@@ -9,10 +9,20 @@
 # ======================================================================
 
 # ---- deps ----
-# dotenv::load_dot_env()   # expects OPENAI_API_KEY in .env
-# install.packages(c("fs","jsonlite","stringr","readr","httr2"))
+# check if 'librarian' is installed and if not, install it
+if (! "librarian" %in% rownames(installed.packages()) ){
+  install.packages("librarian")
+}
 
+# load packages if not already loaded
+librarian::shelf(
+  tidyverse, rmarkdown, httr2, jsonlite, utils, base, fs, quarto,
+  cezarykuran/oaii
+)
+
+# set the lab number
 LAB_NUMBER <- 9
+# set up for processing
 source("./R/oaii_grading_assistant.R")
 
 # -------------------
@@ -31,7 +41,7 @@ solution_file_id   <- cfg[["solution_file_id"]]
 starter_file_id    <- cfg[["starter_file_id"]]
 
 # -------------------
-# Assistants v2 helpers using httr2
+# Assistants helpers using httr2
 # -------------------
 
 #' openai_req - create an OpenAI HTTP request object with authorization
@@ -53,7 +63,7 @@ openai_req <- function(path) {
 
 #' create_thread - extend OpenAI HTTP request object, defining behaviour
 #'
-#' @returns An HTTP request
+#' @returns returns NULL, an atomic vector, or list
 #'
 #' @examples
 create_thread <- function() {
@@ -72,7 +82,7 @@ create_thread <- function() {
 #' @param role
 #' @param attachments
 #'
-#' @returns
+#' @returns returns NULL, an atomic vector, or list
 #'
 #' @examples
 add_message <- function(thread_id, content, role = "user", attachments = NULL) {
@@ -89,13 +99,12 @@ add_message <- function(thread_id, content, role = "user", attachments = NULL) {
   httr2::resp_body_json(resp, simplifyVector = TRUE)
 }
 
-#' start_run -
+#' start_run - create OpenAI HTTP request to set up thread with assistants
 #'
 #' @param thread_id
 #' @param assistant_id
 #'
-#' @returns
-#' @export
+#' @returns returns NULL, an atomic vector, or list
 #'
 #' @examples
 start_run <- function(thread_id, assistant_id) {
@@ -113,7 +122,7 @@ start_run <- function(thread_id, assistant_id) {
 #' @param thread_id
 #' @param run_id
 #'
-#' @returns
+#' @returns returns NULL, an atomic vector, or list
 #'
 #' @examples
 retrieve_run <- function(thread_id, run_id) {
@@ -123,6 +132,15 @@ retrieve_run <- function(thread_id, run_id) {
   httr2::resp_body_json(resp, simplifyVector = TRUE)
 }
 
+#' list_messages - get messages
+#'
+#' @param thread_id
+#' @param order
+#' @param limit
+#'
+#' @returns returns NULL, an atomic vector, or list
+#'
+#' @examples
 list_messages <- function(thread_id, order = "desc", limit = 15) {
   resp <- openai_req(sprintf("/threads/%s/messages?order=%s&limit=%d", thread_id, order, limit)) |>
     httr2::req_perform()
@@ -130,6 +148,16 @@ list_messages <- function(thread_id, order = "desc", limit = 15) {
   httr2::resp_body_json(resp, simplifyVector = FALSE)
 }
 
+#' wait_run_complete
+#'
+#' @param thread_id
+#' @param run_id
+#' @param sleep_seconds
+#' @param timeout_seconds
+#'
+#' @returns
+#'
+#' @examples
 wait_run_complete <- function(thread_id, run_id, sleep_seconds = 0.7, timeout_seconds = 180) {
   t0 <- Sys.time()
   repeat {
@@ -143,6 +171,14 @@ wait_run_complete <- function(thread_id, run_id, sleep_seconds = 0.7, timeout_se
   }
 }
 
+#' latest_assistant_text
+#'
+#' @param thread_id
+#'
+#' @returns
+#' @export
+#'
+#' @examples
 latest_assistant_text <- function(thread_id) {
   msgs <- list_messages(thread_id, order = "desc", limit = 15)
   data <- msgs[["data"]]
@@ -171,22 +207,13 @@ latest_assistant_text <- function(thread_id) {
 Q_COUNT <- 10L
 Q_COLS  <- paste0("Q", 1:Q_COUNT)
 
-# extract_qnum <- function(key_or_value) {
-#   if (is.null(key_or_value)) return(NA_integer_)
-#   s <- trimws(as.character(key_or_value))
-#   # patterns like Q1, q1, question_1, Question 1, 1
-#   m <- regexpr("(?<!\\d)(?:q|question)?\\s*_?(\\d{1,2})(?!\\d)", s, perl = TRUE, ignore.case = TRUE)
-#   if (m[1] > 0) {
-#     n <- as.integer(regmatches(s, m)[1])
-#     if (!is.na(n) && n >= 1L && n <= Q_COUNT) return(n)
-#   }
-#   if (grepl("^[0-9]+$", s)) {
-#     n <- as.integer(s)
-#     if (!is.na(n) && n >= 1L && n <= Q_COUNT) return(n)
-#   }
-#   NA_integer_
-# }
-
+#' extract_qnum
+#'
+#' @param key_or_value
+#'
+#' @returns
+#'
+#' @examples
 extract_qnum <- function(key_or_value) {
   if (is.null(key_or_value)) return(NA_integer_)
   s <- trimws(as.character(key_or_value))
@@ -208,12 +235,29 @@ extract_qnum <- function(key_or_value) {
   NA_integer_
 }
 
+#' coerce_float
+#'
+#' @param x
+#'
+#' @returns
+#' @export
+#'
+#' @examples
 coerce_float <- function(x) {
   v <- suppressWarnings(as.numeric(x))
   if (is.na(v)) return(NA_real_)
   v
 }
 
+#' parse_reply_to_row
+#'
+#' @param reply_text
+#' @param student_name
+#'
+#' @returns
+#' @export
+#'
+#' @examples
 parse_reply_to_row <- function(reply_text, student_name) {
   row <- as.list(stats::setNames(rep(list(NA_real_), length(Q_COLS)), Q_COLS))
   row <- append(list(Student = student_name), row)
