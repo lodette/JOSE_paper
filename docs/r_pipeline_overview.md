@@ -35,11 +35,13 @@ timeout is exceeded.
 ## Output and Parsing
 
 Once a run completes, the assistant's text reply is extracted from the thread
-message list and parsed from JSON into a flat named list. The parser handles
-multiple response schemas that the model may produce — a named `questions`
-object, an array of question items, or a flat top-level structure — normalising
-question keys such as `"Q1"`, `"question_1"`, or bare integers to a canonical
-form. Per-question grades and feedback are assembled into a data frame alongside
-a computed total and concatenated comments column. The final results for all
-students are written to `r_lab{N}_grades.csv` with a UTF-8 BOM for Excel
-compatibility using `readr::write_excel_csv()`.
+message list and parsed directly with `jsonlite::fromJSON()`. Valid JSON is
+guaranteed at the API level by setting `response_format = list(type =
+"json_object")` on the run request, so no defensive multi-schema handling is
+needed. The reply is expected to conform to a single canonical schema: a
+`questions` object with keys `Q1`–`Q10`, each containing `grade` and
+`feedback` fields, plus a top-level `total` and `overall_comment`. Per-question
+grades and feedback are assembled into a data frame alongside a computed total
+and concatenated comments column. The final results for all students are written
+to `r_lab{N}_grades.csv` with a UTF-8 BOM for Excel compatibility using
+`readr::write_excel_csv()`.
