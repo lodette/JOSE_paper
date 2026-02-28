@@ -1,22 +1,13 @@
 import json
 from pathlib import Path
-import os
 from openai import OpenAI
-from dotenv import load_dotenv
 from grading_context import (
     MODEL,
     load_text,
     build_system_message,
     build_cached_context_messages,
+    LAB_NUMBER,
 )
-
-load_dotenv()
-
-client = OpenAI()
-
-LAB_NUMBER = os.getenv("LAB_NUMBER")
-if LAB_NUMBER is None:
-    raise ValueError("Environment variable LAB_NUMBER is not set. Please define LAB_NUMBER in your .env file.")
 
 
 def grade_student_qmd(student_qmd_path: Path) -> dict:
@@ -44,9 +35,11 @@ def grade_student_qmd(student_qmd_path: Path) -> dict:
     dict
         Parsed JSON response from the model.
     """
-    system_msg = build_system_message()
-    context_msgs = build_cached_context_messages()
-    student_text = load_text(student_qmd_path)
+    client = OpenAI()
+
+    system_msg    = build_system_message()
+    context_msgs  = build_cached_context_messages()
+    student_text  = load_text(student_qmd_path)
 
     student_msg = {
         "role": "user",
@@ -75,9 +68,4 @@ def grade_student_qmd(student_qmd_path: Path) -> dict:
     )
 
     raw = response.choices[0].message.content
-    try:
-        result = json.loads(raw)
-    except json.JSONDecodeError as e:
-        raise RuntimeError(f"Model returned invalid JSON: {e}\n\nRaw:\n{raw}")
-
-    return result
+    return json.loads(raw)

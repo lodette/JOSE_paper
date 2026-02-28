@@ -1,22 +1,24 @@
 import os
 from pathlib import Path
 from dotenv import load_dotenv
-import json
 
+# Single authoritative load of .env — all other modules import from here
 load_dotenv()
 
 LAB_NUMBER = os.getenv("LAB_NUMBER")
 if LAB_NUMBER is None:
-    raise ValueError("Environment variable LAB_NUMBER is not set. Please define LAB_NUMBER in your .env file.")   # default to 6 if missing
+    raise ValueError("Environment variable LAB_NUMBER is not set. Please define LAB_NUMBER in your .env file.")
+
 BASE_DIR = Path(__file__).parent
 
 # Dynamic file names
-RUBRIC_PATH = BASE_DIR / f"rubric_lab_{LAB_NUMBER}.json"
-STARTER_PATH = BASE_DIR / f"BSMM_8740_lab_{LAB_NUMBER}_starter.qmd"
-SOLUTION_PATH = BASE_DIR / f"BSMM_8740_lab_{LAB_NUMBER}_solutions.qmd"
+RUBRIC_PATH       = BASE_DIR / f"assignment/rubric_lab_{LAB_NUMBER}.json"
+STARTER_PATH      = BASE_DIR / f"assignment/BSMM_8740_lab_{LAB_NUMBER}_starter.qmd"
+SOLUTION_PATH     = BASE_DIR / f"assignment/BSMM_8740_lab_{LAB_NUMBER}_solutions.qmd"
 INSTRUCTIONS_PATH = BASE_DIR / "grader_instructions.txt"
 
-MODEL = "gpt-5.1"
+MODEL   = "gpt-5.1"
+Q_COUNT = 10   # number of graded questions per lab
 
 
 def load_text(path) -> str:

@@ -1,73 +1,61 @@
 import os
 import csv
 from pathlib import Path
-from dotenv import load_dotenv
 
+from grading_context import LAB_NUMBER, Q_COUNT
 from grade_student import grade_student_qmd
 
-load_dotenv()
-
-LAB_NUMBER = os.getenv("LAB_NUMBER")
-if LAB_NUMBER is None:
-    raise ValueError("Environment variable LAB_NUMBER is not set. Please define LAB_NUMBER in your .env file.")
-
-BASE_LAB_DIR = os.getenv("BASE_LAB_DIR", r"C:\Users\muham\Desktop\University\TA")
+BASE_LAB_DIR = os.getenv("BASE_LAB_DIR")
+if BASE_LAB_DIR is None:
+    raise ValueError(
+        "Environment variable BASE_LAB_DIR is not set. "
+        "Please define BASE_LAB_DIR in your .env file."
+    )
 
 # Root folder that contains all the student folders for this lab
-BASE_DIR = Path(BASE_LAB_DIR) / f"lab-{LAB_NUMBER}"
+BASE_DIR   = Path(BASE_LAB_DIR) / f"lab-{LAB_NUMBER}"
 OUTPUT_CSV = BASE_DIR / f"lab{LAB_NUMBER}_grades.csv"
 
+Q_COLS          = [f"Q{i}" for i in range(1, Q_COUNT + 1)]
+Q_FEEDBACK_COLS = [f"Q{i}_feedback" for i in range(1, Q_COUNT + 1)]
+FIELDNAMES      = ["Student", "Total", "OverallComment"] + Q_COLS + Q_FEEDBACK_COLS
 
 
 def main():
     rows = []
 
-    # Look for the common file name inside all student folders
-    # If the actual name is "2025-lab-5.qmd", change it here.
     for path in sorted(BASE_DIR.rglob(f"2025-lab-{LAB_NUMBER}.qmd")):
-        # path.parent is e.g. C:\...\lab-5\2025-lab-5_Ama8777
         student_folder = path.parent
-        folder_name = student_folder.name          # "2025-lab-5_Ama8777"
+        folder_name    = student_folder.name   # e.g. "2025-lab-9_Ama8777"
 
-        # Extract the part after the underscore -> "Ama8777"
-        if "_" in folder_name:
-            student_id = folder_name.split("_", 1)[1]
-        else:
-            # Fallback: if format is different, just use folder name
-
-            student_id = folder_name
-
+        student_id = folder_name.split("_", 1)[1] if "_" in folder_name else folder_name
         print(f"Grading {student_id} from {path} ...")
 
-        # IMPORTANT: pass a Path object into grade_student_qmd
-        result = grade_student_qmd(path)
+        try:
+            result    = grade_student_qmd(path)
+            questions = result.get("questions", {})
 
-        total = result.get("total")
-        questions = result.get("questions", {})
+            row = {
+                "Student":        student_id,
+                "Total":          result.get("total"),
+                "OverallComment": result.get("overall_comment", ""),
+            }
+            for q in Q_COLS:
+                qinfo    = questions.get(q, {})
+                row[q]            = qinfo.get("grade")
+                row[f"{q}_feedback"] = qinfo.get("feedback")
 
-        row = {
-            "Student": student_id,
-            "Total": total,
-            "OverallComment": result.get("overall_comment", ""),
-        }
-
-        # Flatten Q1–Q10 grades + feedback
-        for q in range(1, 11):
-            qk = f"Q{q}"
-            qinfo = questions.get(qk, {})
-            row[qk] = qinfo.get("grade")
-            row[f"{qk}_feedback"] = qinfo.get("feedback")
+        except Exception as e:
+            print(f"  ERROR grading {student_id}: {e}")
+            row = {"Student": student_id, "Total": None, "OverallComment": f"Error: {e}"}
+            for q in Q_COLS:
+                row[q]            = None
+                row[f"{q}_feedback"] = None
 
         rows.append(row)
 
-    fieldnames = (
-        ["Student", "Total", "OverallComment"]
-        + [f"Q{i}" for i in range(1, 11)]
-        + [f"Q{i}_feedback" for i in range(1, 11)]
-    )
-
     with OUTPUT_CSV.open("w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer = csv.DictWriter(f, fieldnames=FIELDNAMES)
         writer.writeheader()
         writer.writerows(rows)
 
