@@ -11,29 +11,40 @@ from grading_context import (
 
 
 def grade_student_qmd(student_qmd_path: Path) -> dict:
-    """
-    Grade a single student's .qmd file and return a Python dict
-    with the JSON structure:
+    """Grade a single student's ``.qmd`` submission using the Chat Completions API.
 
-    {
-      "questions": {
-        "Q1": { "grade": <number>, "feedback": "<comment>" },
-        ...
-        "Q10": { "grade": <number>, "feedback": "<comment>" }
-      },
-      "total": <sum of all question grades>,
-      "overall_comment": "<2-3 sentence summary>"
-    }
+    Assembles a full message list consisting of the system message (grader
+    instructions), three ephemerally-cached context messages (rubric, starter,
+    solution), and a final user message containing the student submission
+    wrapped in ``=== STUDENT_QMD_START/END ===`` delimiters. Sends a single
+    synchronous request to the Chat Completions API with
+    ``response_format={"type": "json_object"}`` to enforce valid JSON output
+    and ``temperature=0.1`` to minimise grading variability.
 
-    Parameters
-    ----------
-    student_qmd_path : Path
-        Absolute or relative path to the student's .qmd submission file.
+    The returned dict conforms to the schema::
 
-    Returns
-    -------
-    dict
-        Parsed JSON response from the model.
+        {
+            "questions": {
+                "Q1": {"grade": <number>, "feedback": "<comment>"},
+                ...
+                "Q10": {"grade": <number>, "feedback": "<comment>"}
+            },
+            "total": <sum of all question grades>,
+            "overall_comment": "<2-3 sentence summary>"
+        }
+
+    :param student_qmd_path: Absolute or relative path to the student's
+        ``.qmd`` submission file.
+    :type student_qmd_path: pathlib.Path
+    :returns: Parsed JSON response from the model as a Python dictionary
+        containing ``"questions"``, ``"total"``, and ``"overall_comment"``
+        keys.
+    :rtype: dict
+    :raises FileNotFoundError: If *student_qmd_path* does not exist.
+    :raises openai.OpenAIError: If the API call fails due to a network error,
+        authentication failure, or rate limit.
+    :raises json.JSONDecodeError: If the model returns malformed JSON despite
+        the ``json_object`` response format constraint.
     """
     client = OpenAI()
 

@@ -22,6 +22,25 @@ FIELDNAMES      = ["Student", "Total", "OverallComment"] + Q_COLS + Q_FEEDBACK_C
 
 
 def main():
+    """Grade all student submissions for the configured lab and write results to CSV.
+
+    Recursively searches :data:`BASE_DIR` for every file matching
+    ``2025-lab-{LAB_NUMBER}.qmd``, extracts the student ID from the
+    containing folder name (the portion after the first underscore), and
+    calls :func:`grade_student.grade_student_qmd` for each submission.
+    Per-student exceptions are caught and recorded as an error row so that
+    a single failure does not abort the batch.
+
+    Results are written to :data:`OUTPUT_CSV` as a UTF-8 CSV with the
+    following columns: ``Student``, ``Total``, ``OverallComment``,
+    ``Q1``–``Q{Q_COUNT}``, and ``Q1_feedback``–``Q{Q_COUNT}_feedback``.
+    Progress and any per-student errors are printed to stdout.
+
+    :returns: None. Writes :data:`OUTPUT_CSV` as a side effect.
+    :rtype: None
+    :raises FileNotFoundError: If :data:`BASE_DIR` does not exist or
+        contains no matching student submission files.
+    """
     rows = []
 
     for path in sorted(BASE_DIR.rglob(f"2025-lab-{LAB_NUMBER}.qmd")):
