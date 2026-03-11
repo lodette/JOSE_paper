@@ -64,7 +64,7 @@ Solution .qmd ─┘
 Both pipelines require the same three files per lab, placed in `assignment/`:
 
 | File | Description |
-|------------------------------------|------------------------------------|
+|----|----|
 | `rubric_lab_<N>.json` | Per-question rubric with point values and grading criteria |
 | `BSMM_8740_lab_<N>_solutions.qmd` | Instructor solution for the lab |
 | `BSMM_8740_lab_<N>_starter.qmd` | Starter template distributed to students |
@@ -210,7 +210,7 @@ Write results to `assignment/r_lab<N>_grades.csv`.
 ### Output Format (R)
 
 | Column | Description |
-|------------------------------------|------------------------------------|
+|----|----|
 | `Student` | Student ID extracted from the folder name |
 | `Q1` … `Q10` | Numeric grade for each question |
 | `Total` | Sum of all question grades |
@@ -223,7 +223,7 @@ CSV encoding: **UTF-8 BOM** (Excel compatible).
 ## Pipeline Comparison
 
 | Aspect | Python | R |
-|------------------------|------------------------|------------------------|
+|----|----|----|
 | **API** | Chat Completions (`POST /chat/completions`) | Assistants v2 (`/assistants`, `/threads`, `/runs`) |
 | **Execution model** | Synchronous — one HTTP call per student | Asynchronous — thread created, run started, then polled |
 | **Setup required** | None — stateless, run directly | One-time setup script creates a persistent Assistant and uploads files |
