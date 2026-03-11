@@ -36,7 +36,7 @@ jobs:
       - name: Cache R packages
         uses: actions/cache@v4
         with:
-          path: ${{ env.R_LIBS_USER }}
+          path: ${{ env.R_LIBS_USER || '~/R/libs' }}
           key: r-${{ runner.os }}-${{ hashFiles('R/**') }}
           restore-keys: r-${{ runner.os }}-
 
