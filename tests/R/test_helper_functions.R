@@ -20,9 +20,23 @@ library(withr)
 LAB_NUMBER <- 9L   # needed by oaii_grading_assistant.R's module-level code
 Sys.setenv(OPENAI_API_KEY = "sk-test-dummy-key-for-ci")
 
+# ---------------------------------------------------------------------------
+# Resolve project root robustly.
+# testthat::test_dir() changes the working directory to the test folder
+# (tests/R/) before executing each file, so relative paths like "R/..."
+# break.  We detect which situation we are in by checking whether the R/
+# directory is visible from the current working directory; if not, we
+# navigate two levels up (tests/R -> tests -> project root).
+# ---------------------------------------------------------------------------
+proj_root <- if (file.exists("R/oaii_grading_assistant.R")) {
+  normalizePath(".")
+} else {
+  normalizePath(file.path(getwd(), "../.."))
+}
+
 fns_env <- new.env(parent = globalenv())
 fns_env$LAB_NUMBER <- LAB_NUMBER
-sys.source("R/oaii_grading_assistant.R", envir = fns_env)
+sys.source(file.path(proj_root, "R", "oaii_grading_assistant.R"), envir = fns_env)
 
 qmd_to_temp_md        <- fns_env$qmd_to_temp_md
 upload_for_assistants <- fns_env$upload_for_assistants
@@ -33,11 +47,15 @@ openai_req            <- fns_env$openai_req
 # ---------------------------------------------------------------------------
 
 test_that("oaii_grading_assistant.R parses without error", {
-  expect_no_error(parse(file = "R/oaii_grading_assistant.R"))
+  expect_no_error(
+    parse(file = file.path(proj_root, "R", "oaii_grading_assistant.R"))
+  )
 })
 
 test_that("oaii_grading_assistant_runner.R parses without error", {
-  expect_no_error(parse(file = "R/oaii_grading_assistant_runner.R"))
+  expect_no_error(
+    parse(file = file.path(proj_root, "R", "oaii_grading_assistant_runner.R"))
+  )
 })
 
 # ---------------------------------------------------------------------------
