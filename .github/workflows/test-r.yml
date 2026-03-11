@@ -43,11 +43,10 @@ jobs:
       - name: Install R packages
         run: |
           install.packages(c(
-            "remotes", "testthat", "withr",
+            "testthat", "withr",
             "httr2", "jsonlite", "fs", "stringr",
             "readr", "quarto", "librarian"
           ))
-          remotes::install_github("cezarykuran/oaii", quiet = TRUE)
         shell: Rscript {0}
 
       - name: Check R syntax
