@@ -106,6 +106,21 @@ The `pytest` step and all environment variable injections are unchanged.
 
 ---
 
+## Git history produced this session
+
+| Commit | Description |
+|---|---|
+| `120f044` | Move Python source files into Python/ subdirectory (PR #4) |
+| `bb23690` | Merge pull request #4 from lodette/feat/python-subdirectory |
+
+## Pull requests merged
+
+| PR | Branch | Merged into |
+|---|---|---|
+| #4 | `feat/python-subdirectory` | `main` |
+
+---
+
 ## Final repository state
 
 ```
@@ -120,7 +135,7 @@ main (local and remote, in sync)
 │   └── oaii_grading_assistant_runner.R
 ├── .github/workflows/test-python.yml   (updated)
 ├── .github/workflows/test-r.yml        (unchanged)
-├── conftest.py                          (updated — sys.path)
+├── conftest.py                          (updated — sys.path + Python/ on path)
 ├── requirements.txt
 ├── JOSE_paper.Rproj
 ├── tests/
@@ -133,3 +148,5 @@ main (local and remote, in sync)
     ├── session_notes_2026_03_11.md
     └── session_notes_2026_03_12.md
 ```
+
+Both CI workflows pass on every push and PR to `main`.
