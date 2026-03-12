@@ -30,8 +30,7 @@ tests/
 **File:** `.github/workflows/test-python.yml`
 
 **Trigger:** push or pull-request to `main` when any of the following paths
-change: `**.py`, `tests/**`, `grader_instructions.txt`, `assignment/**`, or
-the workflow file itself.
+change: `Python/**`, `tests/**`, `assignment/**`, or the workflow file itself.
 
 **Steps:**
 
@@ -40,7 +39,7 @@ the workflow file itself.
 | Checkout | `actions/checkout@v4` | Clone the repository |
 | Set up Python | `actions/setup-python@v5` (3.11, pip cache) | Reproducible interpreter |
 | Install dependencies | `pip install openai python-dotenv pytest ruff` | Runtime + test + lint |
-| Lint | `ruff check --select F .` | Catch undefined names, unused imports (pyflakes rules only) |
+| Lint | `ruff check --select F Python/ tests/ conftest.py` | Catch undefined names, unused imports (pyflakes rules only) |
 | Test | `pytest tests/ --ignore=tests/R -v` | Run all Python unit tests |
 
 **Environment variables injected by the workflow:**
@@ -108,8 +107,12 @@ by the R scripts themselves.
 ### `conftest.py` — environment bootstrap
 
 Placed at the **project root** so pytest adds the root directory to
-`sys.path` automatically.  Sets all three environment variables using
-`os.environ.setdefault` before any test module is imported:
+`sys.path` automatically.  Before any test module is imported it:
+
+1. Prepends the `Python/` subdirectory to `sys.path` so that test modules
+   can do `from grading_context import …` without a package prefix — matching
+   the runtime behaviour of running the scripts directly from `Python/`.
+2. Sets all three environment variables using `os.environ.setdefault`:
 
 ```
 LAB_NUMBER      → "9"
@@ -231,8 +234,8 @@ codebase.
 **Fixture files from the repository.** Rather than creating artificial stubs,
 the Python context tests read the real `assignment/rubric_lab_9.json`,
 `BSMM_8740_lab_9_starter.qmd`, `BSMM_8740_lab_9_solutions.qmd`, and
-`grader_instructions.txt`.  This means the tests also catch problems such as a
-missing or malformed rubric file.
+`Python/grader_instructions.txt`.  This means the tests also catch problems
+such as a missing or malformed rubric file.
 
 **Linting scope.** `ruff --select F` covers pyflakes rules: undefined names,
 undefined local variables, redefined imports, and unused imports.  Style rules
