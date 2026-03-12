@@ -28,12 +28,13 @@ Solution .qmd ─┘
 
 ## Repository Structure
 
-```         
+```
 .
-├── batch_grade.py                        # Python: entry point — grades all students
-├── grade_student.py                      # Python: grades a single student .qmd
-├── grading_context.py                    # Python: loads rubric, templates, builds API messages
-├── grader_instructions.txt               # Python: system prompt for the LLM grader
+├── Python/
+│   ├── batch_grade.py                    # Python: entry point — grades all students
+│   ├── grade_student.py                  # Python: grades a single student .qmd
+│   ├── grading_context.py                # Python: loads rubric, templates, builds API messages
+│   └── grader_instructions.txt           # Python: system prompt for the LLM grader
 │
 ├── R/
 │   ├── oaii_grading_assistant.R          # R: one-time setup — uploads files, creates assistant
@@ -119,7 +120,7 @@ pip install openai python-dotenv
 ### Usage
 
 ``` bash
-python batch_grade.py
+python Python/batch_grade.py
 ```
 
 This will: 1.
@@ -232,7 +233,7 @@ CSV encoding: **UTF-8 BOM** (Excel compatible).
 | **Structured output** | `response_format={"type": "json_object"}` | `response_format = list(type = "json_object")` on each run |
 | **Output parsing** | `json.loads()` | `jsonlite::fromJSON()` |
 | **Model** | `gpt-5.1` | `gpt-4.1-mini` |
-| **Scripts** | 3 modules at project root | 2 scripts in `R/` |
+| **Scripts** | 3 modules in `Python/` | 2 scripts in `R/` |
 | **CSV encoding** | UTF-8 | UTF-8 BOM (Excel compatible) |
 | **Feedback columns** | Separate `Q1_feedback` … `Q10_feedback` | Single concatenated `Comments` column |
 
@@ -266,7 +267,7 @@ Each rubric file (`rubric_lab_<N>.json`) follows this schema:
 
 ## Grader Instructions
 
-`grader_instructions.txt` is used by the **Python** pipeline as the LLM system prompt.
+`Python/grader_instructions.txt` is used by the **Python** pipeline as the LLM system prompt.
 It instructs the model to:
 
 -   Grade only what appears in the student's `.qmd` source (not assumed execution output).
@@ -275,7 +276,7 @@ It instructs the model to:
 
 The **R** pipeline embeds a briefer set of instructions inline in the runner's grading prompt, with the assistant configured at creation time to search the uploaded rubric and solution files for relevant content.
 
-Modify `grader_instructions.txt` to adjust Python grading behaviour without changing any Python code.
+Modify `Python/grader_instructions.txt` to adjust Python grading behaviour without changing any Python code.
 
 ------------------------------------------------------------------------
 

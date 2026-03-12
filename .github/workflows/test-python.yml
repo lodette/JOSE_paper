@@ -4,17 +4,15 @@ on:
   push:
     branches: [main]
     paths:
-      - "**.py"
+      - "Python/**"
       - "tests/**"
-      - "grader_instructions.txt"
       - "assignment/**"
       - ".github/workflows/test-python.yml"
   pull_request:
     branches: [main]
     paths:
-      - "**.py"
+      - "Python/**"
       - "tests/**"
-      - "grader_instructions.txt"
       - "assignment/**"
       - ".github/workflows/test-python.yml"
 
@@ -44,7 +42,7 @@ jobs:
           pip install -r requirements.txt pytest ruff
 
       - name: Lint with ruff (pyflakes rules)
-        run: ruff check --select F .
+        run: ruff check --select F Python/ tests/ conftest.py
 
       - name: Run unit tests
         run: pytest tests/ --ignore=tests/R -v
