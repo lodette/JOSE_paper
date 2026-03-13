@@ -233,7 +233,7 @@ codebase.
 
 **Fixture files from the repository.** Rather than creating artificial stubs,
 the Python context tests read the real `assignment/rubric_lab_9.json`,
-`BSMM_8740_lab_9_starter.qmd`, `BSMM_8740_lab_9_solutions.qmd`, and
+`lab_9_starter.qmd`, `lab_9_solutions.qmd`, and
 `Python/grader_instructions.txt`.  This means the tests also catch problems
 such as a missing or malformed rubric file.
 

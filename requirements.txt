@@ -1,2 +1,26 @@
+# =============================================================================
+# Python packages (pip install -r requirements.txt)
+# =============================================================================
 openai
 python-dotenv
+
+# =============================================================================
+# R packages
+# install.packages(c("librarian", "httr2", "jsonlite", "stringr", "readr",
+#                    "fs", "quarto", "rmarkdown", "tidyverse",
+#                    "testthat", "withr"))
+# # GitHub-hosted package (requires remotes or pak):
+# remotes::install_github("cezarykuran/oaii")
+# =============================================================================
+# librarian      -- shelf() package loader used in runner
+# httr2          -- HTTP requests to OpenAI API
+# jsonlite       -- JSON parsing and writing (fromJSON, write_json)
+# stringr        -- string utilities (str_glue, str_remove)
+# readr          -- CSV writing (write_excel_csv)
+# fs             -- file system helpers (file_exists, file_temp, file_move)
+# quarto         -- .qmd rendering (quarto_render)
+# rmarkdown      -- loaded via librarian shelf in runner
+# tidyverse      -- meta-package (includes stringr, readr, dplyr, etc.)
+# oaii           -- OpenAI API wrapper; GitHub: cezarykuran/oaii
+# testthat       -- unit testing (tests/R/)
+# withr          -- test fixtures (used in tests/R/)
