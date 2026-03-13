@@ -250,6 +250,24 @@ latest_assistant_text <- function(thread_id) {
   ""
 }
 
+#' Safely coerce a value to a length-1 numeric
+#'
+#' A defensive wrapper around \code{as.numeric()} that returns \code{NA_real_}
+#' whenever the input is \code{NULL}, a zero-length vector, or non-numeric.
+#' Prevents \code{as.numeric(NULL)} from silently producing \code{numeric(0)},
+#' which would cause \code{as.data.frame()} to fail with
+#' \emph{"arguments imply differing number of rows: 1, 0"}.
+#'
+#' @param x A scalar value (numeric, integer, character, or \code{NULL}).
+#'
+#' @returns A length-1 double: the numeric value of \code{x}, or
+#'   \code{NA_real_} if \code{x} is \code{NULL}, empty, or non-numeric.
+safe_num <- function(x) {
+  if (is.null(x) || length(x) == 0) return(NA_real_)
+  v <- suppressWarnings(as.numeric(x[[1]]))
+  if (is.na(v)) NA_real_ else v
+}
+
 # -------------------
 # Main grading loop
 # -------------------
@@ -361,9 +379,9 @@ main <- function() {
     row <- list(Student = student_name)
     for (i in seq_len(Q_COUNT)) {
       q        <- paste0("Q", i)
-      row[[q]] <- as.numeric(questions[[q]][["grade"]])
+      row[[q]] <- safe_num(questions[[q]][["grade"]])
     }
-    row[["Total"]]    <- as.numeric(payload[["total"]])
+    row[["Total"]]    <- safe_num(payload[["total"]])
     row[["Comments"]] <- paste(
       vapply(paste0("Q", seq_len(Q_COUNT)), function(q) {
         fb <- questions[[q]][["feedback"]]
@@ -387,6 +405,7 @@ main <- function() {
       miss <- setdiff(col_order, names(x))
       if (length(miss)) for (m in miss) x[[m]] <- NA
       x <- x[col_order]
+      x <- lapply(x, function(v) if (is.null(v) || length(v) == 0) NA else v)
       as.data.frame(x, stringsAsFactors = FALSE)
     }))
     # write CSV with BOM for Excel
