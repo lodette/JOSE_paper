@@ -41,7 +41,7 @@ def _make_mock_response(payload: dict) -> MagicMock:
 # ---------------------------------------------------------------------------
 
 def test_returns_dict(tmp_path):
-    student = tmp_path / "2025-lab-9.qmd"
+    student = tmp_path / "lab-9.qmd"
     student.write_text("# Submission", encoding="utf-8")
 
     with patch("grade_student.OpenAI") as MockOpenAI:
@@ -54,7 +54,7 @@ def test_returns_dict(tmp_path):
 
 
 def test_contains_required_top_level_keys(tmp_path):
-    student = tmp_path / "2025-lab-9.qmd"
+    student = tmp_path / "lab-9.qmd"
     student.write_text("# Submission", encoding="utf-8")
 
     with patch("grade_student.OpenAI") as MockOpenAI:
@@ -67,7 +67,7 @@ def test_contains_required_top_level_keys(tmp_path):
 
 
 def test_total_matches_payload(tmp_path):
-    student = tmp_path / "2025-lab-9.qmd"
+    student = tmp_path / "lab-9.qmd"
     student.write_text("# Submission", encoding="utf-8")
 
     with patch("grade_student.OpenAI") as MockOpenAI:
@@ -80,7 +80,7 @@ def test_total_matches_payload(tmp_path):
 
 
 def test_calls_api_with_configured_model(tmp_path):
-    student = tmp_path / "2025-lab-9.qmd"
+    student = tmp_path / "lab-9.qmd"
     student.write_text("# Submission", encoding="utf-8")
 
     with patch("grade_student.OpenAI") as MockOpenAI:
@@ -95,7 +95,7 @@ def test_calls_api_with_configured_model(tmp_path):
 
 
 def test_enforces_json_response_format(tmp_path):
-    student = tmp_path / "2025-lab-9.qmd"
+    student = tmp_path / "lab-9.qmd"
     student.write_text("# Submission", encoding="utf-8")
 
     with patch("grade_student.OpenAI") as MockOpenAI:

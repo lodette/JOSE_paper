@@ -25,7 +25,7 @@ def main():
     """Grade all student submissions for the configured lab and write results to CSV.
 
     Recursively searches :data:`BASE_DIR` for every file matching
-    ``2025-lab-{LAB_NUMBER}.qmd``, extracts the student ID from the
+    ``lab-{LAB_NUMBER}.qmd``, extracts the student ID from the
     containing folder name (the portion after the first underscore), and
     calls :func:`grade_student.grade_student_qmd` for each submission.
     Per-student exceptions are caught and recorded as an error row so that
@@ -43,9 +43,9 @@ def main():
     """
     rows = []
 
-    for path in sorted(BASE_DIR.rglob(f"2025-lab-{LAB_NUMBER}.qmd")):
+    for path in sorted(BASE_DIR.rglob(f"lab-{LAB_NUMBER}.qmd")):
         student_folder = path.parent
-        folder_name    = student_folder.name   # e.g. "2025-lab-9_Ama8777"
+        folder_name    = student_folder.name   # e.g. "lab-9_Ama8777"
 
         student_id = folder_name.split("_", 1)[1] if "_" in folder_name else folder_name
         print(f"Grading {student_id} from {path} ...")

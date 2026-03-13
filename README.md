@@ -42,8 +42,8 @@ Solution .qmd ─┘
 │
 ├── assignment/
 │   ├── rubric_lab_<N>.json               # Shared: per-question rubric
-│   ├── BSMM_8740_lab_<N>_solutions.qmd   # Shared: instructor solution
-│   ├── BSMM_8740_lab_<N>_starter.qmd     # Shared: starter template
+│   ├── lab_<N>_solutions.qmd   # Shared: instructor solution
+│   ├── lab_<N>_starter.qmd     # Shared: starter template
 │   └── assistant_config.json             # R only: persisted assistant and file IDs
 │
 ├── docs/
@@ -67,15 +67,15 @@ Both pipelines require the same three files per lab, placed in `assignment/`:
 | File | Description |
 |----|----|
 | `rubric_lab_<N>.json` | Per-question rubric with point values and grading criteria |
-| `BSMM_8740_lab_<N>_solutions.qmd` | Instructor solution for the lab |
-| `BSMM_8740_lab_<N>_starter.qmd` | Starter template distributed to students |
+| `lab_<N>_solutions.qmd` | Instructor solution for the lab |
+| `lab_<N>_starter.qmd` | Starter template distributed to students |
 
 Student submissions are organized in subfolders:
 
 ```         
 assignment/
-└── 2025-lab-<N>_<StudentID>/
-    └── 2025-lab-<N>.qmd
+└── lab-<N>_<StudentID>/
+    └── lab-<N>.qmd
 ```
 
 ------------------------------------------------------------------------
@@ -124,7 +124,7 @@ python Python/batch_grade.py
 ```
 
 This will: 1.
-Recursively find every `2025-lab-<N>.qmd` file under `<BASE_LAB_DIR>/lab-<N>/`.
+Recursively find every `lab-<N>.qmd` file under `<BASE_LAB_DIR>/lab-<N>/`.
 2.
 Send each file to the LLM along with the rubric, starter, and solution.
 3.
@@ -296,7 +296,7 @@ LAB_NUMBER <- 10
 
 Then re-run Phase 1 (setup) to upload the new lab's materials and create a fresh Assistant.
 
-For both pipelines, add the corresponding files to `assignment/`: - `rubric_lab_10.json` - `BSMM_8740_lab_10_starter.qmd` - `BSMM_8740_lab_10_solutions.qmd`
+For both pipelines, add the corresponding files to `assignment/`: - `rubric_lab_10.json` - `lab_10_starter.qmd` - `lab_10_solutions.qmd`
 
 ------------------------------------------------------------------------
 
