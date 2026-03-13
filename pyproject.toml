@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name = "jose-grading"
+version = "0.1.0"
+description = "LLM-based automated grading pipeline for student lab submissions"
+requires-python = ">=3.11"
+dependencies = [
+    "openai",
+    "python-dotenv",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "ruff",
+]
+
+[tool.setuptools.packages.find]
+where = ["Python"]
+
+[tool.ruff]
+select = ["F"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+ignore = ["tests/R"]

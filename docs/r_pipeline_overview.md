@@ -24,7 +24,7 @@ inference time. The resulting assistant ID and file IDs are persisted to
 The runner script processes student submissions in batch. It reads
 `assistant_config.json` to recover the assistant and file IDs, then walks the
 `assignment/` directory for student subfolders, each expected to contain a
-`2025-lab-{N}.qmd` submission file. For each student, the script creates an
+`lab-{N}.qmd` submission file. For each student, the script creates an
 isolated conversation thread (`POST /threads`), appends a user message
 containing the grading prompt and the full submission text, and attaches the
 rubric, solution, and starter file IDs so the assistant can search them via
