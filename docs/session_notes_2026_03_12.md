@@ -35,8 +35,8 @@ BASE_DIR     = Path(__file__).parent   # Python/ directory
 PROJECT_ROOT = BASE_DIR.parent         # project root
 
 RUBRIC_PATH       = PROJECT_ROOT / f"assignment/rubric_lab_{LAB_NUMBER}.json"
-STARTER_PATH      = PROJECT_ROOT / f"assignment/BSMM_8740_lab_{LAB_NUMBER}_starter.qmd"
-SOLUTION_PATH     = PROJECT_ROOT / f"assignment/BSMM_8740_lab_{LAB_NUMBER}_solutions.qmd"
+STARTER_PATH      = PROJECT_ROOT / f"assignment/lab_{LAB_NUMBER}_starter.qmd"
+SOLUTION_PATH     = PROJECT_ROOT / f"assignment/lab_{LAB_NUMBER}_solutions.qmd"
 INSTRUCTIONS_PATH = BASE_DIR     / "grader_instructions.txt"
 ```
 

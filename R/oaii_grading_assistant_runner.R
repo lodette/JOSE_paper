@@ -267,7 +267,7 @@ latest_assistant_text <- function(thread_id) {
 #'
 #' Reads \code{assistant_id}, \code{rubric_file_id}, \code{solution_file_id},
 #' and \code{starter_file_id} from \code{CONFIG_JSON}. Submission files are
-#' expected at \code{assignment/2025-lab-{LAB_NUMBER}_<id>/2025-lab-{LAB_NUMBER}.qmd}.
+#' expected at \code{assignment/lab-{LAB_NUMBER}_<id>/lab-{LAB_NUMBER}.qmd}.
 #' Output is written to \code{output_csv}.
 #'
 #' @returns Called for its side effects. Returns \code{NULL} invisibly.
@@ -295,15 +295,15 @@ main <- function() {
   subdirs     <- all_entries[file.info(all_entries)$isdir %in% TRUE]
 
   for (folder in subdirs) { #folder = subdirs[20]
-    student_file <- file.path(folder, stringr::str_glue("2025-lab-{LAB_NUMBER}.qmd"))
+    student_file <- file.path(folder, stringr::str_glue("lab-{LAB_NUMBER}.qmd"))
     if (!file.exists(student_file)) {
-      message("Skipping ", basename(folder), stringr::str_glue(". Missing 2025-lab-{LAB_NUMBER}.qmd"))
+      message("Skipping ", basename(folder), stringr::str_glue(". Missing lab-{LAB_NUMBER}.qmd"))
       next
     }
 
     student_name <- stringr::str_remove(
       basename(folder),
-      stringr::str_glue("(?i)^2025-lab-{LAB_NUMBER}_")
+      stringr::str_glue("(?i)^lab-{LAB_NUMBER}_")
     )
     student_text <- readChar(student_file, nchars = file.info(student_file)$size, useBytes = TRUE)
 

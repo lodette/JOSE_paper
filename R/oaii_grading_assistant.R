@@ -12,8 +12,8 @@
 # ---- config ----
 # ---- paths ----
 RUBRIC_PATH  <- stringr::str_glue("./assignment/rubric_lab_{LAB_NUMBER}.json")
-SOLUTION_QMD <- stringr::str_glue("./assignment/BSMM_8740_lab_{LAB_NUMBER}_solutions.qmd")
-STARTER_FILE <- stringr::str_glue("./assignment/BSMM_8740_lab_{LAB_NUMBER}_starter.qmd")
+SOLUTION_QMD <- stringr::str_glue("./assignment/lab_{LAB_NUMBER}_solutions.qmd")
+STARTER_FILE <- stringr::str_glue("./assignment/lab_{LAB_NUMBER}_starter.qmd")
 CONFIG_JSON  <- "./assignment/assistant_config.json"
 
 #' Render a Quarto document to GitHub Flavored Markdown in a temporary file
