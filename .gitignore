@@ -5,6 +5,7 @@ env
 # Student submission directories and graded output
 lab-*/
 *_grades.csv
+R vs python/student_mapping.private.csv
 
 # Python cache
 __pycache__/
