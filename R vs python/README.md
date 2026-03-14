@@ -2,13 +2,13 @@ This folder summarizes the comparison between the Python grading pipeline and th
 
 ## Selected students
 
-The anonymized students were sampled from `research/lab9_grades.csv` by score band:
+The anonymized students were sampled from `research/lab9_grades.csv` by score band. The original identities are intentionally omitted from the repository copy to keep this artifact anonymized.
 
-| Alias | Original student | Original score | Band |
-| --- | --- | ---: | --- |
-| `student_high` | `YuqiDing13` | 30.0 | above 83% |
-| `student_mid` | `JS-07` | 23.0 | 66% to 83% |
-| `student_low` | `hd-ay-8` | 17.5 | below 66% |
+| Alias | Score band |
+| --- | --- |
+| `student_high` | above 83% |
+| `student_mid` | 66% to 83% |
+| `student_low` | below 66% |
 
 ## Score comparison
 
