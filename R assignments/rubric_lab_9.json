@@ -1,0 +1,79 @@
+{
+    "GlobalScoring": {
+    "PerExercisePoints": 5,
+    "Breakdown": ["CodeExecution (1 pt)", "ProcessFidelity (2 pt)", "OutputAccuracy (2 pt)"],
+    "DiscretionaryPenaltyMax": 1,
+    "Rules": [
+      "Start from 5 points per exercise and deduct per sub-criterion.",
+      "Apply an additional discretionary penalty up to -0.5 if minor issues exist despite meeting criteria (e.g., sloppiness, unclear reasoning, small but notable mistakes).",
+      "Discretionary is a deduction only; never increases points.",
+      "Clamp each exercise score to [0, 5]."
+    ]
+  },
+
+  "Ex1": {
+    "Points": 5,
+    "Criteria": "Calculate probability that a new customer remains active after 6 months using Markov chain matrix operations",
+    "Checks": {
+      "CodeExecution (1 pt)": "Code should create transition matrix `P` using `matrix(`, then compute 6th power using `%^%` operator from `expm` package, and finally multiply initial state vector with result using `%*%` operator twice",
+      "ProcessFidelity (2 pt)": "Process involves 3 expected steps: (1) define 4x4 transition matrix `P`, (2) compute `P6` as P raised to 6th power, (3) multiply initial state vector `c(1,0,0,0)` with `P6` then with indicator vector `c(1,1,1,0)` to sum non-churned states",
+      "OutputAccuracy (2 pt)": "Expected output should be approximately 0.75 or 75% probability that a new customer remains active after 6 months"
+    },
+      "DiscretionaryPenalty (up to -1 pt)": "Code does not execute to completion."
+  },
+
+  "Ex2": {
+    "Points": 5,
+    "Criteria": "Compute stationary distribution for 2-state customer churn Markov chain and verify mathematical properties",
+    "Checks": {
+      "CodeExecution (1 pt)": "Code should create 2x2 transition matrix `P` using `matrix(`, compute transpose of (I-P) using `t(` and `diag(`, add row using `rbind(`, then solve system using `qr.solve(`",
+      "ProcessFidelity (2 pt)": "Process involves 4 expected steps: (1) define 2x2 transition matrix `P`, (2) create matrix `A` as transpose of (I-P) with added constraint row, (3) create vector `b` with zeros and final 1, (4) solve for stationary distribution `pi` using linear system solver",
+      "OutputAccuracy (2 pt)": "Expected stationary probability for current customers should be approximately 0.23 or 23%, with verification that `pi %*% P - pi` equals zero and `sum(pi)` equals 1.0"
+    },
+      "DiscretionaryPenalty (up to -1 pt)": "Code does not execute to completion."
+  },
+
+  "Ex3": {
+    "Points": 5,
+    "Criteria": "Derive acceptance probabilities for Metropolis-Hastings algorithm sampling from Poisson distribution",
+    "Checks": {
+      "CodeExecution (1 pt)": "No code execution required - this is a mathematical derivation exercise showing algebraic manipulation of acceptance probability formula",
+      "ProcessFidelity (2 pt)": "Process involves 4 expected cases: (1) x≥1, y=x+1, (2) x≥2, y=x-1, (3) x=0, y=1, (4) x=1, y=0, each requiring calculation of ratio of Poisson probabilities and proposal probabilities",
+      "OutputAccuracy (2 pt)": "Expected formulas: case 1 gives λ/(x+1), case 2 gives x/λ, case 3 gives λ/2, case 4 gives 2/λ, all wrapped in min(1, •) function"
+    },
+      "DiscretionaryPenalty (up to -1 pt)": "Does not apply to this question."
+  },
+
+  "Ex4": {
+    "Points": 5,
+    "Criteria": "Implement Metropolis-Hastings algorithm to sample from Poisson distribution and compare with theoretical quantiles",
+    "Checks": {
+      "CodeExecution (1 pt)": "Code should use `set.seed(`, implement for loop with `runif(` calls for proposal generation and acceptance decisions, use predefined `alpha(` function, and compare results with `qpois(` function",
+      "ProcessFidelity (2 pt)": "Process involves 3 expected steps: (1) initialize variables `n`, `x`, `lambda`, `samples`, (2) run MH algorithm for 2000 iterations using for loop with proposal and acceptance steps, (3) compare sample quantiles with theoretical quantiles using `quantile(` and `qpois(`",
+      "OutputAccuracy (2 pt)": "Expected output should be a tibble with two columns `sample quantiles` and `poisson quantiles` showing quantiles at probabilities 0.1, 0.25, 0.5, 0.75, 0.9 for Poisson(20) distribution"
+    },
+      "DiscretionaryPenalty (up to -1 pt)": "Code does not execute to completion."
+  },
+
+  "Ex5": {
+    "Points": 5,
+    "Criteria": "Analyze loan portfolio transitions using Markov chain matrix powers for multi-year predictions",
+    "Checks": {
+      "CodeExecution (1 pt)": "Code should use matrix multiplication `%*%` with initial state vectors and matrix powers `%^%` operator to compute future states at 1 year, 2 years, and 20 years",
+      "ProcessFidelity (2 pt)": "Process involves 4 expected calculations: (1) 1-year portfolio composition using initial state `c(0.6, 0.4, 0, 0)`, (2) 2-year composition using `P %^% 2`, (3) 20-year outcome for good loans using `c(1, 0, 0, 0)`, (4) 20-year outcome for risky loans using `c(0, 1, 0, 0)`",
+      "OutputAccuracy (2 pt)": "Expected results: 76.5% of good loans paid in full after 20 years, 19.6% of risky loans paid in full after 20 years, with portfolio compositions shown for 1-year and 2-year horizons"
+    },
+      "DiscretionaryPenalty (up to -1 pt)": "Code does not execute to completion."
+  },
+
+  "Ex6": {
+    "Points": 5,
+    "Criteria": "Compare traditional covariance calculation with alternative difference-based covariance formula using simulated data",
+    "Checks": {
+      "CodeExecution (1 pt)": "Code should use `set.seed(`, `rnorm(` for data generation, `purrr::map(` for iteration over sample sizes, `dplyr::lead(` for difference calculations, and `tidyr::unnest(` for result extraction",
+      "ProcessFidelity (2 pt)": "Process involves 3 expected steps: (1) create tibble with sample sizes `T`, (2) use `purrr::map(` to generate data and compute both covariance measures for each sample size, (3) unnest results to compare traditional `cov` with alternative `alt_cov` calculations",
+      "OutputAccuracy (2 pt)": "Expected output should be a tibble with columns `T`, `cov`, and `alt_cov` showing sample sizes from 10 to 5000, demonstrating that both covariance calculations produce identical results"
+    },
+      "DiscretionaryPenalty (up to -1 pt)": "Code does not execute to completion."
+  }
+}

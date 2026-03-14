@@ -1,0 +1,4 @@
+alias,score_band,original_total,original_percent
+student_high,above_83,30.0,100.0000
+student_mid,66_to_83,23.0,76.6667
+student_low,below_66,17.5,58.3333

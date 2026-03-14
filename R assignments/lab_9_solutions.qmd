@@ -1,0 +1,375 @@
+---
+title: "Lab 9 - Monte Carlo Methods"
+subtitle: "SOLUTIONS"
+editor: visual
+format: html
+self-contained: true
+reference-location: margin
+---
+
+## Introduction
+
+In today's lab, you'll practice sampling from distributions and working with Markov chains.
+
+## Packages
+
+```{r}
+#| message: false
+
+# check if 'librarian' is installed and if not, install it
+if (! "librarian" %in% rownames(installed.packages()) ){
+  install.packages("librarian")
+}
+  
+# load packages if not already loaded
+librarian::shelf(expm, ggplot2, magrittr, tidyverse)
+
+# set the default theme for plotting
+theme_set(theme_bw(base_size = 18) + theme(legend.position = "top"))
+```
+
+## Exercise 1: Markov Chains
+
+Here is a four-state Markov chain that could model customer loyalty for a subscription-based service, with one month between steps in the chain.
+
+[**States**]{.underline}:
+
+-   State A (New Customer): The customer has just signed up.
+-   State B (Engaged Customer): The customer is actively using the service and seems satisfied.
+-   State C (At-Risk Customer): The customer is showing signs of disengagement (e.g., reduced usage or negative feedback).
+-   State D (Churned Customer): The customer has canceled their subscription.
+
+[**Transition Probabilities**]{.underline}:
+
+-   From State A (New Customer), there’s a high chance the customer either becomes engaged (State B) or starts showing signs of disengagement (State C).
+-   From State B (Engaged Customer), there’s a probability of remaining engaged or transitioning to at-risk (State C), and a smaller probability of churning (State D).
+-   From State C (At-Risk Customer), the customer may either re-engage (return to State B) or churn (State D).
+-   From State D (Churned Customer), it's possible the company might re-acquire the customer through marketing efforts, which would move them back to State A.
+
+This type of Markov model can help businesses predict customer behavior, optimize marketing efforts, and focus on retention strategies.
+
+What is the probability that a customer that has [just signed up]{.underline} is [still a customer after 6 months]{.underline}?
+
+::: {#Q1 .callout-note appearance="simple" icon="false"}
+## SOLUTION Q1:
+
+```{r}
+#| echo: true
+# the transition matrix is
+P <- 
+  matrix(
+    c(0, 0.6, 0.4, 0,
+      0, 0.75, 0.25, 0,
+      0, 0.5, 0, 0.5,
+      0.3, 0, 0, 0.7
+      )
+    , nrow =4, byrow = TRUE
+  )
+
+# (1) use the %^% operator from the expm package to compute the k-th power of a matrix (k = 6 months)
+
+P6 <- P %^% 6
+
+# (2) starting from a new customer, sum the probabilities of the non-churned customer states after 6 steps
+
+(c(1,0,0,0) %*% P6) %*% c(1,1,1,0)
+```
+
+The probability that a customer that has just signed up is still a customer after 6 months is about 75%
+:::
+
+## Exercise 2: Markov Chains
+
+A simpler customer churn model for each monthly period is as follows:
+
+-   a current subscriber cancels their subscription with probability 0.2
+-   a current non-subscriber starts their subscription with probability with probability 0.06
+
+write the state transition matrix $\mathsf{P}_{i,j}$, and compute the stationary distribution $\pi$ for this Markov Chain, confirming that $\pi\mathsf{P}=\pi$ and that the sum of the elements of $\pi$ equals $1.0$.
+
+What percent of customers remain once the chain has reached the steady state?
+
+::: {#Q2 .callout-note appearance="simple" icon="false"}
+## SOLUTION Q2:
+
+```{r}
+#| echo: true
+#| message: false
+# the state transition matrix is:
+P <- 
+  matrix(
+    c(0.8, 0.2,
+      0.06, 0.94
+      )
+    , nrow =2, byrow = TRUE
+  )
+```
+
+```{r}
+#| echo: true
+# compute transpose(I-P) and add a row of 1's to the bottom 
+# call the resulting matrix A
+A <- t( diag(2) - P ) |> rbind(c(1,1))
+
+# create a vector called b with the # of elements equal to the number of rows of A
+# with elements all zero but the last one
+b <- c(0,0,1)
+
+# compute pi by solving (pi x A) = b using qr.solve
+pi <- qr.solve(A,b)
+
+# confirm (pi x A) = pi
+pi %*% P - pi
+
+sum(pi)
+```
+
+In the steady state, the probability of being a current customer is pi\[1\] = 23%
+:::
+
+## Exercise 3: Acceptance probability
+
+We want to sample from the Poisson distribution $\mathbb{P}(X=x)\sim \lambda^xe^{-\lambda}/x!$ using a Metropolis Hastings algorithm.
+
+For the proposal we toss a fair coin and add or subtract 1 from $x$ to obtain $y$ as follows:
+
+$$
+q(y|x)=\begin{cases}
+\frac{1}{2} & x\ge1,\,y=x\pm1\\
+1 & x=0,\,y=1\\
+0 & \mathrm{otherwise}
+\end{cases}
+$$ show that the acceptance probability is
+
+$$
+\alpha(y|x)=\begin{cases}
+\min\left(1,\frac{\lambda}{x+1}\right) & x\ge1,\,y=x+1\\
+\min\left(1,\frac{x}{\lambda}\right) & x\ge2,\,y=x-1
+\end{cases}
+$$
+
+and $\alpha(1|0)=\min(1,\lambda/2)$, $\alpha(0|1)=\min(1,2/\lambda)$. NOTE: there are 4 cases to consider.
+
+::: {#Q3 .callout-note appearance="simple" icon="false"}
+## SOLUTION Q3:
+
+For the MH algorithm, the acceptance probability is $\alpha(X_{n+1}\vert X_n)=\min\left(1,\frac{\pi(X_{n+1})}{\pi(X_n)}\frac{q(X_{n+1},X_n)}{q(X_n,X_{n+1})}\right)$
+
+case 1: for $x\ge1, y=x+1$, then
+
+$$
+\alpha(x+1\vert x)=\frac{\lambda^{x+1}e^{-\lambda}/(x+1)!}{\lambda^{x}e^{-\lambda}/(x)!}\frac{1/2}{1/2}=\frac{\lambda}{x+1}
+$$
+
+case 2: for $x\ge2, y=x-1$, then
+
+$$
+\alpha(x-1\vert x)=\frac{\lambda^{x-1}e^{-\lambda}/(x-1)!}{\lambda^{x}e^{-\lambda}/(x)!}\frac{1/2}{1/2}=\frac{x}{\lambda}
+$$
+
+case 3: for $x=0, y=1$, then
+
+$$
+\alpha(1\vert 0)=\frac{\lambda^{1}e^{-\lambda}/(1)!}{\lambda^{0}e^{-\lambda}/(0)!}\frac{1/2}{1}=\frac{\lambda}{2}
+$$
+
+case 4: for $x=1, y=0$, then
+
+$$
+\alpha(0\vert 1)=\frac{\lambda^{0}e^{-\lambda}/(0)!}{\lambda^{1}e^{-\lambda}/(1)!}\frac{1}{1/2}=\frac{2}{\lambda}
+$$
+:::
+
+## Exercise 4: Samples from Poisson pmf
+
+Given the following function for the acceptance probability
+
+```{r}
+#| label: define the acceptance probability function (see exerise 3) 
+alpha <- function(y,x, lambda){
+  if(x >= 1 & y == x+1){
+    min(1,lambda/(x+1))
+  }else if(x >= 2 & y == x-1){
+    min(1,x/lambda)
+  }else if(x == 0 & y == 1){
+   min(1,lambda/2)
+  }else{
+    min(1,2/lambda)
+  }
+}
+
+# proposal function definition (implicit in the code below)
+q <- function(y,x){
+  if(x >= 1 & y %in% c(x-1,x+1) ){
+    0.5
+  }else if(x == 0 & y == 1){
+    1
+  }else{
+    0
+  }
+}
+```
+
+1.  Write a MH algorithm to draw 2000 samples from a from a Poisson pmf with $\lambda = 20$ starting from $x_0=1$.
+
+2.  Compare the sample quantiles at probabilities c(0.1,.25,0.5, 0.75, 0.9) with the theoretical quantiles for the Poisson distribution (using the qpois function)
+
+::: {#Q4 .callout-note appearance="simple" icon="false"}
+## SOLUTION Q4:
+
+```{r}
+# MH algorithm drawing 2000 samples from a Poisson(20) pmf
+set.seed(8740)
+# initialize
+n = 2000; x = 1; lambda = 20; samples = c(x,rep(NA,n-1))
+
+for ( t in 2:n ){
+  if(x==0){
+    x = 1
+  }else{
+    # proposal
+    y = ifelse(runif(1) <= 0.5, x+1, x-1)
+    x = ifelse( runif(1) <= alpha(y,x,lambda), y, x)  # to store samples
+  }
+  samples[t] = x
+}
+
+# Comparison of theoretical quantiles and sample quantiles
+tibble::tibble(
+  "sample quantiles" = quantile(samples, c(0.1,.25,0.5, 0.75, 0.9))
+  , "poisson quantiles" = qpois(c(0.1,.25,0.5, 0.75, 0.9), lambda, lower.tail = TRUE, log.p = FALSE)
+)
+```
+:::
+
+## Exercise 5: A Loan Portfolio
+
+Our client is a bank with both asset and liability products in retail bank industry. Most of the bank's assets are loans, and these loans generate the majority of the total revenue earned by the bank. Hence, it is essential for the bank to understand the proportion of loans that have a high propensity to be paid in full and those which will finally become Bad loans.
+
+All the loans that have been issued by the bank are classified into one of four categories :
+
+1.  **Good Loans** : These are the loans which are in progress but are given to low risk customers. We expect most of these loans will be paid up in full with time.
+2.  **Risky loans** : These are also the loans which are in progress but are given to medium or high risk customers. We expect a good number of these customers will default.
+3.  **Bad loans** : The customer to whom these loans were given have already defaulted.
+4.  **Paid up loans** : These loans have already been paid in full.
+
+Your research has suggested the following state transition matrix for the bank loans
+
+```{r}
+# the 1-year state transition matrix for loans is:
+P <- 
+  matrix(
+    c(0.7, 0.05, 0.03, 0.22,
+      0.05, 0.55, 0.35, 0.05,
+      0, 0, 1, 0, 
+      0, 0, 0, 1
+      )
+    , nrow =4, byrow = TRUE
+  )
+
+
+
+c(1, 0.0, 0, 0) %*% (P %^% 20)
+
+c(0, 1, 0, 0) %*% (P %^% 20)
+```
+
+Answer the following questions, given that the bank's records indicate 60% of the loans on the books are 'good loans' and 40% are 'risky loans'. (*use this as the initial state*)
+
+::: {#Q5 .callout-note appearance="simple" icon="false"}
+## SOLUTION Q5:
+
+```{r}
+#| label: use the transition matrix to predict the composition of the loan portfollio
+# describe the current loan portfolio by state at the end of one year. 
+c(0.6, 0.4, 0, 0) %*% P
+
+# describe the current loan portfolio by state at the end of two years.
+c(0.6, 0.4, 0, 0) %*% (P %^% 2)
+```
+
+```{r}
+# What percentage of good loans are paid in full after 20 years
+c(1, 0.0, 0, 0) %*% (P %^% 20)
+```
+
+76.5 percent of good loans are paid in full after 20 years
+
+```{r}
+# What percentage of risky loans are paid in full after 20 years
+c(0, 1, 0, 0) %*% (P %^% 20)
+```
+
+19.6 percent of risky loans are paid in full after 20 years
+:::
+
+## Exercise 6: A New Covariance Calculation
+
+Given $\bar{a}\equiv\frac{1}{T}\sum_{t=1}^T a_t$ (the mean) and sequences $\left\{a_t\right\}_{t=1}^T$ and $\left\{b_t\right\}_{t=1}^T$, we have the following calculation for the population covariance:
+
+$$
+\frac{1}{T}\sum_{t=1}^T(a_t-\bar{a})(b_t-\bar{b})
+$$
+
+Statisticians have long interpreted this as a measure of how much the measurements $a_t$ and $b_t$ co-vary. If $a_t=b_t$ then this formula calculates the population variance of $a_t$, a measure of the dispersion or spread of the values of $a_t$.
+
+Some data scientists have suggested that this formula does not measure variation at all, since self-evidently there are no differences in the formula, other than mean differences, that would capture the variation.
+
+Instead, data scientists have suggested that the following calculation, which sums all possible differences, should be use to estimate co-variation. With $\Delta_k a_t \equiv a_{t+k}-a_t$ (the $k^{th}$ difference) the co-variation is calculated as:
+
+$$\frac{1}{T^2}\sum_{k=1}^{T-1}\sum_{t=1}^{T-k} \Delta_k a_t \Delta_k b_t$$
+
+Use samples of 10, 20, 50, 100, 200, 500, 1000, 2000, 5000 from $a\sim\mathcal{N}(1,1)$ and $b\sim a+\mathcal{N}(4,2)$, and calculate the covariance both ways, putting the result into a table.
+
+How do the calculations compare?
+
+::: {#Q6 .callout-note appearance="simple" icon="false"}
+## SOLUTION Q6:
+
+```{r}
+# NOTE: you may be able to use some version of the following expression as part of your solution:
+# (dplyr::lead(a,k) - a)
+set.seed(8740)
+
+count <- c(10,20,50)
+tibble::tibble(
+  T = c(count, count*10, count*100)
+) |> 
+  dplyr::mutate(
+    result =
+      purrr::map(
+        T
+        , (\(t){
+          a <- rnorm(n = t, mean = 1, sd = 1)
+          b <- a + rnorm(n = t, mean = 4, sd = 2)
+          tibble::tibble(
+            cov = mean((a - mean(a))*(b - mean(b)))
+            # , r_cov = cov(a,b)
+            , alt_cov = 
+              1:(t-1) |> 
+              purrr::map_vec(
+                (\(k){ 
+                  (
+                    (dplyr::lead(a,k) - a) * (dplyr::lead(b,k) - b)) |> 
+                    sum(na.rm=TRUE) 
+                })
+              ) |> sum(na.rm=TRUE) / (t*t)
+          )
+        })
+      )
+  ) |> tidyr::unnest(result)
+
+
+```
+
+The calculations are identical, i.e.
+
+$$\frac{1}{T}\sum_{t=1}^T(a_t-\bar{a})(b_t-\bar{b})= \frac{1}{T^2}\sum_{k=1}^{T-1}\sum_{t=1}^{T-k} \Delta_k a_t \Delta_k b_t
+$$
+:::
+
+## Grading
+
+Total points available: 30 points.
+
+![](images/rubric_lab_9.png){fig-align="center" width="600"}
