@@ -56,6 +56,14 @@ Assignments are written in variants of Markdown. The LLM grader is given a folde
 
 The output is a csv file containing, for each student and assignment, the grade for each question in the assignment and text feedback for each question. System parameters include the API credentials for ChatGPT.
 
+## Control Flow
+
+The R and Python versions operate slightly differently. The R grading pipeline automates the evaluation of student lab submissions using the OpenAI Assistants API v2 while the Python version uses the OpenAI Chat Completions API. The R version uses a separate setup phase to render the markdown files to temporary files and upload them, along with the JSON rubric, to the OpenAI Files API. An Assistant is created which can retrieve relevant content from the uploaded files at inference time.
+
+The high-level control flow of both versions are shown in Figure 1 below.
+
+![Flow of Control in R and Python Versions](images/control_flow_combined-01.png){fig-align="center"}
+
 # References {#references .unnumbered}
 
 ::: list
