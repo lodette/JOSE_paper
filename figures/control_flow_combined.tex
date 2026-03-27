@@ -1,0 +1,23 @@
+\documentclass[tikz, border=16pt]{standalone}
+\usepackage{tikz}
+\usetikzlibrary{shapes.geometric, arrows.meta, positioning, fit, backgrounds}
+
+\begin{document}
+\begin{tikzpicture}
+
+  %% Left: Python diagram
+  \node[inner sep=0pt, anchor=north west] (left) at (0,0) {%
+    \begin{tikzpicture}[node distance=0.7cm]
+      \input{control_flow_python_content}
+    \end{tikzpicture}%
+  };
+
+  %% Right: R diagram — top-aligned, offset 1cm to the right
+  \node[inner sep=0pt, anchor=north west] (right) at ([xshift=1cm]left.north east) {%
+    \begin{tikzpicture}[node distance=0.7cm]
+      \input{control_flow_r_content}
+    \end{tikzpicture}%
+  };
+
+\end{tikzpicture}
+\end{document}
