@@ -36,6 +36,7 @@ proj_root <- if (file.exists("R/oaii_grading_assistant.R")) {
 
 fns_env <- new.env(parent = globalenv())
 fns_env$LAB_NUMBER <- LAB_NUMBER
+sys.source(file.path(proj_root, "R", "utils.R"), envir = fns_env)
 sys.source(file.path(proj_root, "R", "oaii_grading_assistant.R"), envir = fns_env)
 
 qmd_to_temp_md        <- fns_env$qmd_to_temp_md
@@ -45,6 +46,12 @@ openai_req            <- fns_env$openai_req
 # ---------------------------------------------------------------------------
 # Syntax checks
 # ---------------------------------------------------------------------------
+
+test_that("utils.R parses without error", {
+  expect_no_error(
+    parse(file = file.path(proj_root, "R", "utils.R"))
+  )
+})
 
 test_that("oaii_grading_assistant.R parses without error", {
   expect_no_error(
