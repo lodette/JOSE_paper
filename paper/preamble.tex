@@ -1,0 +1,92 @@
+% Place figures and tables exactly where they were called
+\usepackage{float}
+\floatplacement{figure}{H}
+\floatplacement{table}{H}
+
+% Recommended by the modelsummary package
+\usepackage{booktabs}
+\usepackage{siunitx}
+\newcolumntype{d}{S[input-symbols = ()]}
+
+% Add affiliations (title.tex needs to be called under template-partials)
+\usepackage[noblocks]{authblk}
+\renewcommand*{\Authsep}{, }
+\renewcommand*{\Authand}{, }
+\renewcommand*{\Authands}{, }
+\renewcommand\Affilfont{\small}
+
+% Add line numbers
+%\usepackage{lineno}
+%\linenumbers
+\usepackage{setspace}
+\doublespacing
+
+% Tikz
+\usepackage{tikz}
+\usetikzlibrary{shapes.geometric, arrows.meta, positioning, fit, calc, backgrounds, shadows.blur}
+
+% Define colors matching the original
+\definecolor{startend}{RGB}{232,245,233}
+\definecolor{startendBorder}{RGB}{76,175,80}
+\definecolor{process}{RGB}{227,242,253}
+\definecolor{processBorder}{RGB}{33,150,243}
+\definecolor{decision}{RGB}{255,243,224}
+\definecolor{decisionBorder}{RGB}{255,152,0}
+\definecolor{dataio}{RGB}{252,228,236}
+\definecolor{dataioBorder}{RGB}{233,30,99}
+\definecolor{api}{RGB}{243,229,245}
+\definecolor{apiBorder}{RGB}{156,39,176}
+\definecolor{error}{RGB}{255,235,238}
+\definecolor{errorBorder}{RGB}{244,67,54}
+
+% Define styles
+\tikzset{
+    startstop/.style={
+        rectangle, rounded corners=10pt,
+        minimum width=3.5cm, minimum height=1cm,
+        text centered, draw=startendBorder, fill=startend,
+        line width=1.2pt, font=\small\bfseries
+    },
+    process/.style={
+        rectangle, rounded corners=3pt,
+        minimum width=3.5cm, minimum height=0.9cm,
+        text centered, draw=processBorder, fill=process,
+        line width=0.8pt, font=\small, text width=3.2cm
+    },
+    decision/.style={
+        diamond, aspect=2,
+        minimum width=3cm, minimum height=1.2cm,
+        text centered, draw=decisionBorder, fill=decision,
+        line width=0.8pt, font=\small, text width=2.5cm
+    },
+    dataio/.style={
+        rectangle, rounded corners=3pt,
+        minimum width=3.5cm, minimum height=0.9cm,
+        text centered, draw=dataioBorder, fill=dataio,
+        line width=0.8pt, font=\small, text width=3.2cm
+    },
+    apinode/.style={
+        rectangle, rounded corners=3pt,
+        minimum width=3.5cm, minimum height=0.9cm,
+        text centered, draw=apiBorder, fill=api,
+        line width=0.8pt, font=\small, text width=3.2cm
+    },
+    errornode/.style={
+        rectangle, rounded corners=3pt,
+        minimum width=3cm, minimum height=0.9cm,
+        text centered, draw=errorBorder, fill=error,
+        line width=0.8pt, font=\small, text width=2.8cm
+    },
+    arrow/.style={
+        -Stealth, line width=0.6pt, draw=black!70
+    },
+    arrowYes/.style={
+        -Stealth, line width=0.6pt, draw=startendBorder
+    },
+    arrowNo/.style={
+        -Stealth, line width=0.6pt, draw=errorBorder
+    },
+    label/.style={
+        font=\tiny, text=black!80
+    }
+}
