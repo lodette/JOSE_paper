@@ -22,9 +22,8 @@ librarian::shelf(
 
 # set the lab number
 LAB_NUMBER <- 9
-# set up for processing (also defines openai_req, qmd_to_temp_md,
-# upload_for_assistants, and create_assistant_v2)
-source("./R/oaii_grading_assistant.R")
+# load shared utilities (defines openai_req and safe_num)
+source("./R/utils.R")
 
 # -------------------
 # Config
@@ -35,7 +34,7 @@ output_csv     <- stringr::str_glue("{directory_path}/r_lab{LAB_NUMBER}_grades.c
 
 # -------------------
 # Assistants helpers using httr2
-# Note: openai_req() is defined in oaii_grading_assistant.R via source() above
+# Note: openai_req() is defined in R/utils.R via source() above
 # -------------------
 
 #' Create a new OpenAI Assistants v2 thread
@@ -252,24 +251,6 @@ latest_assistant_text <- function(thread_id) {
   ""
 }
 
-#' Safely coerce a value to a length-1 numeric
-#'
-#' A defensive wrapper around \code{as.numeric()} that returns \code{NA_real_}
-#' whenever the input is \code{NULL}, a zero-length vector, or non-numeric.
-#' Prevents \code{as.numeric(NULL)} from silently producing \code{numeric(0)},
-#' which would cause \code{as.data.frame()} to fail with
-#' \emph{"arguments imply differing number of rows: 1, 0"}.
-#'
-#' @param x A scalar value (numeric, integer, character, or \code{NULL}).
-#'
-#' @returns A length-1 double: the numeric value of \code{x}, or
-#'   \code{NA_real_} if \code{x} is \code{NULL}, empty, or non-numeric.
-safe_num <- function(x) {
-  if (is.null(x) || length(x) == 0) return(NA_real_)
-  v <- suppressWarnings(as.numeric(x[[1]]))
-  if (is.na(v)) NA_real_ else v
-}
-
 # -------------------
 # Main grading loop
 # -------------------
@@ -300,6 +281,12 @@ safe_num <- function(x) {
 main <- function() {
 
   # Load assistant and file IDs from config
+  if (!file.exists(CONFIG_JSON)) {
+    stop(
+      "assistant_config.json not found at ", CONFIG_JSON, ". ",
+      "Run oaii_grading_assistant.R first to create the assistant and upload files."
+    )
+  }
   cfg              <- jsonlite::fromJSON(CONFIG_JSON, simplifyVector = TRUE)
   assistant_id     <- cfg[["assistant_id"]]
   rubric_file_id   <- cfg[["rubric_file_id"]]
