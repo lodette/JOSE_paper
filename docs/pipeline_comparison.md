@@ -13,11 +13,13 @@ and how much infrastructure must be in place before grading can begin.
 |---|---|---|
 | **API** | Chat Completions (`POST /chat/completions`) | Assistants v2 (`/assistants`, `/threads`, `/runs`) |
 | **Execution model** | Synchronous — one HTTP call per student | Asynchronous — thread created, run started, then polled |
-| **Setup required** | None — stateless, run directly | One-time setup script creates a persistent Assistant and uploads files |
+| **Setup required** | None — stateless, run directly | Runs automatically on first use; skipped on subsequent runs if `assistant_config.json` is present and matches the current model |
 | **Context delivery** | Full rubric, solution, and starter inlined in every request | Files uploaded once; model retrieves relevant chunks via `file_search` |
 | **Caching** | Ephemeral prompt caching on the shared prefix | Persistent file storage on OpenAI servers |
-| **Structured output** | Enforced via `response_format={"type": "json_object"}` | Requested via prompt only; no API-level enforcement |
-| **Output parsing** | Single `json.loads()` call | Multi-schema defensive parser (`parse_reply_to_row`) |
+| **Structured output** | Enforced via `response_format={"type": "json_object"}` | Enforced via `response_format = list(type = "json_object")` in `start_run()` |
+| **Output parsing** | Single `json.loads()` call | Single `jsonlite::fromJSON()` call |
+| **Temperature** | `0.1` | `0.1` |
+| **Model** | `gpt-5.1` | `gpt-5.1` |
 | **Scripts** | 3 modules (`grading_context.py`, `grade_student.py`, `batch_grade.py`) | 2 scripts (`oaii_grading_assistant.R`, `oaii_grading_assistant_runner.R`) |
 | **CSV encoding** | UTF-8 | UTF-8 BOM (Excel compatible) |
 
@@ -32,11 +34,11 @@ fit within a single call — and a hard dependency on cache hit rates for cost
 efficiency at scale.
 
 The R pipeline offloads grading materials to OpenAI's file storage, keeping
-per-call payloads small and enabling the same Assistant to serve repeated
-grading sessions without re-uploading. The cost is operational complexity: the
-two-script workflow, asynchronous polling, and the absence of structured output
-enforcement mean the R code requires substantially more defensive logic —
-particularly in `parse_reply_to_row`, which handles three possible JSON schemas
-the model might return. Adopting `response_format` on the run object (available
-in Assistants v2) would bring the R pipeline to parity with Python on output
-reliability.
+per-call payloads small. The setup phase (file upload, assistant creation) runs
+automatically on first use and is skipped on subsequent runs via a config cache
+keyed on model name. The cost is operational complexity: the two-script
+workflow and asynchronous polling require more infrastructure than the Python
+approach. Both pipelines now use the same model (`gpt-5.1`), temperature
+(`0.1`), and API-enforced JSON output (`response_format = json_object`), so
+the remaining differences — Assistants v2 vs Chat Completions, and file
+retrieval vs inline context — are the variables under study.

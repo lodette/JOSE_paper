@@ -111,13 +111,15 @@ add_message <- function(thread_id, content, role = "user", attachments = NULL) {
 #'
 #' @returns A named list representing the run object, including at minimum
 #'   \code{$id} (the run ID) and \code{$status} (initially \code{"queued"} or
-#'   \code{"in_progress"}).
+#'   \code{"in_progress"}). The run is configured with \code{temperature = 0.1}
+#'   to match the Python pipeline and minimise grading variability.
 #'
 #' @examples
 start_run <- function(thread_id, assistant_id) {
   body <- list(
     assistant_id    = assistant_id,
-    response_format = list(type = "json_object")
+    response_format = list(type = "json_object"),
+    temperature     = 0.1
   )
   resp <- openai_req(sprintf("/threads/%s/runs", thread_id)) |>
     httr2::req_headers("Content-Type" = "application/json") |>
