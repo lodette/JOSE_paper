@@ -80,32 +80,12 @@ upload_for_assistants <- function(path, api_key) {
   res
 }
 
-#' Build an authenticated OpenAI Assistants v2 request
-#'
-#' Constructs an \code{httr2} request object targeting the OpenAI v1 API,
-#' pre-populated with a Bearer token from the \code{OPENAI_API_KEY} environment
-#' variable and the \code{OpenAI-Beta: assistants=v2} header required by the
-#' Assistants API.
-#'
-#' @param path Character. The API path to append to
-#'   \code{https://api.openai.com/v1}, e.g. \code{"/assistants"}.
-#'
-#' @returns An \code{httr2_request} object ready for further modification (e.g.
-#'   adding a body) and execution via \code{httr2::req_perform()}.
-#'
-#' @seealso \code{\link{create_assistant_v2}}
-# ---- helper. build a request with auth and beta header ----
-openai_req <- function(path) {
-  key <- base::Sys.getenv("OPENAI_API_KEY", unset = NA_character_)
-  if (base::is.na(key) || !base::nzchar(key)) {
-    base::stop("OPENAI_API_KEY is not set.")
-  }
-  httr2::request(base::paste0("https://api.openai.com/v1", path)) |>
-    httr2::req_headers(
-      "Authorization" = base::paste("Bearer", key),
-      "OpenAI-Beta"   = "assistants=v2"
-    )
-}
+# ---- utils ----
+# openai_req() and safe_num() live in R/utils.R.
+# Source it only when not already loaded — the test harness pre-populates the
+# environment via sys.source(), so a plain relative source() would fail when
+# the working directory is tests/R/ rather than the project root.
+if (!exists("openai_req", mode = "function")) source("./R/utils.R")
 
 #' Create an OpenAI Assistants v2 assistant
 #'
