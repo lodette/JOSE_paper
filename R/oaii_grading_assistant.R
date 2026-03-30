@@ -10,6 +10,8 @@
 # install.packages("oaii")   # if needed
 
 # ---- config ----
+MODEL <- "gpt-5.1"
+
 # ---- paths ----
 RUBRIC_PATH  <- stringr::str_glue("./assignment/rubric_lab_{LAB_NUMBER}.json")
 SOLUTION_QMD <- stringr::str_glue("./assignment/lab_{LAB_NUMBER}_solutions.qmd")
@@ -145,33 +147,74 @@ create_assistant_v2 <- function(model, name = NULL, instructions = NULL, tools =
   httr2::resp_body_json(resp, simplifyVector = TRUE)
 }
 
+#' Check whether a valid assistant config exists for the given model
+#'
+#' Reads \code{assistant_config.json} and returns \code{TRUE} only when the
+#' file exists, can be parsed as JSON, contains non-empty values for all
+#' required fields (\code{assistant_id}, \code{rubric_file_id},
+#' \code{solution_file_id}, \code{starter_file_id}, \code{model}), and the
+#' stored \code{model} matches \code{expected_model}. Any parse error returns
+#' \code{FALSE} silently.
+#'
+#' @param config_path Character. Path to \code{assistant_config.json}.
+#' @param expected_model Character. The model ID the current session requires,
+#'   e.g. \code{"gpt-5.1"}. A mismatch causes the function to return
+#'   \code{FALSE}, triggering a fresh setup with the correct model.
+#'
+#' @returns Logical scalar. \code{TRUE} if the config is present, complete, and
+#'   matches \code{expected_model}; \code{FALSE} otherwise.
+#'
+#' @seealso \code{\link{main}}
+config_is_valid <- function(config_path, expected_model) {
+  if (!fs::file_exists(config_path)) return(FALSE)
+  cfg <- tryCatch(
+    jsonlite::read_json(config_path),
+    error = function(e) NULL
+  )
+  if (is.null(cfg)) return(FALSE)
+  required <- c("assistant_id", "rubric_file_id", "solution_file_id",
+                "starter_file_id", "model")
+  has_all <- all(vapply(required, function(k) {
+    v <- cfg[[k]]
+    !is.null(v) && nzchar(as.character(v))
+  }, logical(1L)))
+  has_all && identical(cfg[["model"]], expected_model)
+}
+
 #' Set up the OpenAI grading assistant for a lab
 #'
-#' Orchestrates the one-time setup required before batch grading can begin.
-#' Specifically: renders the solution and starter \code{.qmd} files to GitHub
-#' Flavored Markdown, uploads the rubric, rendered solution, and rendered
-#' starter to the OpenAI Files API, creates an Assistants v2 assistant
+#' Orchestrates the setup required before batch grading can begin. If a valid
+#' \code{assistant_config.json} already exists for the current \code{MODEL},
+#' setup is skipped entirely and the function returns invisibly — preventing
+#' redundant file uploads and assistant creation on repeated runs. When setup
+#' is needed, the function: renders the solution and starter \code{.qmd} files
+#' to GitHub Flavored Markdown, uploads the rubric, rendered solution, and
+#' rendered starter to the OpenAI Files API, creates an Assistants v2 assistant
 #' configured with the \code{file_search} tool, and persists the resulting IDs
-#' to \code{assistant_config.json} for consumption by the runner script
-#' (\code{oaii_grading_assistant_runner.R}).
+#' (plus the model name) to \code{assistant_config.json}.
 #'
 #' Reads file paths from the module-level constants \code{RUBRIC_PATH},
-#' \code{SOLUTION_QMD}, \code{STARTER_FILE}, and \code{CONFIG_JSON}, which are
-#' constructed from the \code{LAB_NUMBER} variable set before sourcing this
-#' file.
+#' \code{SOLUTION_QMD}, \code{STARTER_FILE}, \code{CONFIG_JSON}, and
+#' \code{MODEL}, which are set at the top of this file.
 #'
 #' @returns Called for its side effects. Returns \code{NULL} invisibly.
 #'   Writes \code{assistant_config.json} containing \code{assistant_id},
-#'   \code{rubric_file_id}, \code{solution_file_id}, and
-#'   \code{starter_file_id}. Emits progress messages via \code{message()}.
+#'   \code{rubric_file_id}, \code{solution_file_id}, \code{starter_file_id},
+#'   and \code{model}. Emits progress messages via \code{message()}.
 #'
-#' @seealso \code{\link{qmd_to_temp_md}}, \code{\link{upload_for_assistants}},
-#'   \code{\link{create_assistant_v2}}
+#' @seealso \code{\link{config_is_valid}}, \code{\link{qmd_to_temp_md}},
+#'   \code{\link{upload_for_assistants}}, \code{\link{create_assistant_v2}}
 # ---- main ----
 main <- function() {
   # ensure key present
   key <- Sys.getenv("OPENAI_API_KEY", unset = NA_character_)
   if (is.na(key) || !nzchar(key)) stop("OPENAI_API_KEY is not set.")
+
+  # skip setup if a valid config already exists for this model
+  if (config_is_valid(CONFIG_JSON, MODEL)) {
+    message("Valid assistant config found for model ", MODEL, ". Skipping setup.")
+    return(invisible(NULL))
+  }
 
   # render solution to GFM
   solution_md <- qmd_to_temp_md(SOLUTION_QMD)
@@ -182,22 +225,9 @@ main <- function() {
   solution_file <- upload_for_assistants(solution_md, api_key = key)
   starter_file  <- upload_for_assistants(starter_md, api_key = key)
 
-  # # create assistant with file_search tool
-  # assistant <- oaii::assistants_create_assistant_request(
-  #   model        = "gpt-4.1-mini",
-  #   name         = "BSMM 8740 Lab 3 Grading Assistant",
-  #   instructions = paste0(
-  #     "You grade lab submissions using the rubric and the rendered solution. ",
-  #     "Search attached files and cite sources where helpful."
-  #   ),
-  #   tools        = list(list(type = "file_search")),
-  #   file_ids     = NULL,
-  #   api_key      = key
-  # )
-
-  # create assistantwith file_search tool
+  # create assistant with file_search tool
   assistant <- create_assistant_v2(
-    model        = "gpt-4.1-mini",
+    model        = MODEL,
     name         = "BSMM 8740 Lab 9 Grading Assistant",
     instructions = paste0(
       "You grade lab submissions using the rubric and the rendered solution. ",
@@ -206,12 +236,13 @@ main <- function() {
     tools        = list(list(type = "file_search"))
   )
 
-  # persist IDs
+  # persist IDs and model
   cfg <- list(
     assistant_id      = assistant$id,
     rubric_file_id    = rubric_file$id,
     solution_file_id  = solution_file$id,
-    starter_file_id   = starter_file$id
+    starter_file_id   = starter_file$id,
+    model             = MODEL
   )
 
   jsonlite::write_json(cfg, CONFIG_JSON, pretty = TRUE, auto_unbox = TRUE)

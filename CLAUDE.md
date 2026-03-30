@@ -138,7 +138,7 @@ Two GitHub Actions workflows with path-based triggers:
 
 ## Models
 
-- R runner: `gpt-4.1-mini` (set in `R/oaii_grading_assistant.R`)
+- R runner: `gpt-5.1`, `temperature = 0.1` (set in `R/oaii_grading_assistant.R` and `start_run()` in `R/oaii_grading_assistant_runner.R`)
 - Python: `gpt-5.1` (set in `Python/grading_context.py`)
 
 ---
