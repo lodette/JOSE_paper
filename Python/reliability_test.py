@@ -22,7 +22,6 @@ Usage::
 import argparse
 import csv
 import os
-import sys
 from pathlib import Path
 
 from grading_context import LAB_NUMBER, Q_COUNT
