@@ -11,8 +11,11 @@
 # e.g. "R assignments/lab-9_student_high_grades.csv"
 #
 # Usage:
-#   N <- 10          # set number of runs (default 10)
+#   N <- 10          # set number of runs per invocation (default 10)
 #   source("R/reliability_test.R")
+#
+# Re-running appends to existing CSVs with continuous run numbering,
+# so 10 runs of N=10 accumulate to 100 rows per student.
 # ======================================================================
 
 # ---- config ----
@@ -56,23 +59,27 @@ COL_ORDER       <- c("Run", "Total", "OverallComment", Q_COLS, Q_FEEDBACK_COLS)
 #' @param student_file Character. Path to the student's \code{.qmd} file.
 #' @param student_name Character. Display name used in progress messages.
 #' @param n_runs Integer. Number of grading runs to perform.
+#' @param run_offset Integer. Value added to each run index so that run
+#'   numbers continue from the last row of an existing CSV rather than
+#'   restarting at 1. Defaults to \code{0L}.
 #'
 #' @returns A \code{data.frame} with \code{n_runs} rows and columns
 #'   \code{Run}, \code{Total}, \code{OverallComment},
 #'   \code{Q1}–\code{Q{Q_COUNT}}, and
 #'   \code{Q1_feedback}–\code{Q{Q_COUNT}_feedback}.
-grade_n_times <- function(student_file, student_name, n_runs) {
+grade_n_times <- function(student_file, student_name, n_runs, run_offset = 0L) {
   records <- vector("list", n_runs)
 
   for (i in seq_len(n_runs)) {
-    message("  Run ", i, "/", n_runs, " ...")
+    run_number <- run_offset + i
+    message("  Run ", run_number, " (", i, "/", n_runs, ") ...")
 
     records[[i]] <- tryCatch({
       result    <- grade_student(student_file)
       questions <- result[["questions"]]
 
       r <- list(
-        Run            = i,
+        Run            = run_number,
         Total          = safe_num(result[["total"]]),
         OverallComment = as.character(
           if (!is.null(result[["overall_comment"]])) result[["overall_comment"]] else ""
@@ -88,8 +95,8 @@ grade_n_times <- function(student_file, student_name, n_runs) {
       r
 
     }, error = function(e) {
-      message("    ERROR on run ", i, ": ", conditionMessage(e))
-      r <- list(Run            = i,
+      message("    ERROR on run ", run_number, ": ", conditionMessage(e))
+      r <- list(Run            = run_number,
                 Total          = NA_real_,
                 OverallComment = paste("Error:", conditionMessage(e)))
       for (q in Q_COLS) {
@@ -117,6 +124,11 @@ grade_n_times <- function(student_file, student_name, n_runs) {
 #' each student \code{N} times via \code{grade_n_times()}, and writes one
 #' CSV per student beside the submission folder:
 #' \code{{directory_path}/{folder_name}_grades.csv}.
+#'
+#' If a CSV already exists for a student, the new runs are appended with
+#' run numbers continuing from the last recorded run. This allows a total
+#' of 100 runs to be accumulated across 10 separate invocations of 10,
+#' for example.
 #'
 #' @returns Called for its side effects. Returns \code{NULL} invisibly.
 main <- function() {
@@ -146,9 +158,25 @@ main <- function() {
     output_csv   <- file.path(directory_path,
                               paste0(folder_name, "_grades.csv"))
 
-    message("Grading ", student_name, " (", N, " runs) ...")
-    df <- grade_n_times(student_file, student_name, N)
-    readr::write_csv(df, output_csv, na = "")
+    # Detect existing runs so new ones continue from the last run number
+    if (file.exists(output_csv)) {
+      existing   <- readr::read_csv(output_csv, show_col_types = FALSE)
+      run_offset <- max(existing$Run, na.rm = TRUE)
+      message("Grading ", student_name, " (runs ", run_offset + 1L,
+              "–", run_offset + N, ") ...")
+    } else {
+      run_offset <- 0L
+      message("Grading ", student_name, " (runs 1–", N, ") ...")
+    }
+
+    df <- grade_n_times(student_file, student_name, N, run_offset)
+
+    if (run_offset > 0L) {
+      readr::write_csv(df, output_csv, na = "", append = TRUE,
+                       col_names = FALSE)
+    } else {
+      readr::write_csv(df, output_csv, na = "")
+    }
     message("  Saved: ", output_csv, "\n")
   }
 
