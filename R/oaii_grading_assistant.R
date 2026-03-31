@@ -10,13 +10,13 @@
 # install.packages("oaii")   # if needed
 
 # ---- config ----
-MODEL <- "gpt-5.1"
+MODEL <- "gpt-4.1"
 
 # ---- paths ----
-RUBRIC_PATH  <- stringr::str_glue("./assignment/rubric_lab_{LAB_NUMBER}.json")
-SOLUTION_QMD <- stringr::str_glue("./assignment/lab_{LAB_NUMBER}_solutions.qmd")
-STARTER_FILE <- stringr::str_glue("./assignment/lab_{LAB_NUMBER}_starter.qmd")
-CONFIG_JSON  <- "./assignment/assistant_config.json"
+RUBRIC_PATH  <- stringr::str_glue("./R assignments/rubric_lab_{LAB_NUMBER}.json")
+SOLUTION_QMD <- stringr::str_glue("./R assignments/lab_{LAB_NUMBER}_solutions.qmd")
+STARTER_FILE <- stringr::str_glue("./R assignments/lab_{LAB_NUMBER}_starter.qmd")
+CONFIG_JSON  <- "./R assignments/assistant_config.json"
 
 #' Render a Quarto document to GitHub Flavored Markdown in a temporary file
 #'
@@ -113,6 +113,13 @@ if (!exists("openai_req", mode = "function")) source("./R/utils.R")
 #' @seealso \code{\link{main}}, \code{\link{openai_req}}
 # ---- create an assistant ----
 create_assistant_v2 <- function(model, name = NULL, instructions = NULL, tools = list()) {
+  # model        = MODEL
+  # name         = "Grading Assistant"
+  # instructions = paste0(
+  #   "You grade lab submissions using the rubric and the rendered solution. ",
+  #   "Search attached files and cite sources where helpful."
+  # )
+  # tools        = list(list(type = "file_search"))
   body <- list(
     model = model,
     name = name,
@@ -208,7 +215,7 @@ main <- function() {
   # create assistant with file_search tool
   assistant <- create_assistant_v2(
     model        = MODEL,
-    name         = "BSMM 8740 Lab 9 Grading Assistant",
+    name         = "Grading Assistant",
     instructions = paste0(
       "You grade lab submissions using the rubric and the rendered solution. ",
       "Search attached files and cite sources where helpful."
@@ -235,6 +242,6 @@ main <- function() {
 if (identical(environment(), globalenv())) {
   tryCatch(main(), error = function(e) {
     message("Error. ", conditionMessage(e))
-    quit(save = "no", status = 1)
+    if (!interactive()) quit(save = "no", status = 1)
   })
 }

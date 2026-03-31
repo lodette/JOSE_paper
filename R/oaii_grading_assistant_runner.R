@@ -28,8 +28,8 @@ source("./R/utils.R")
 # -------------------
 # Config
 # -------------------
-CONFIG_JSON    <- "./assignment/assistant_config.json"
-directory_path <- paste0(getwd(), "/assignment")
+CONFIG_JSON    <- "./R assignments/assistant_config.json"
+directory_path <- paste0(getwd(), "/R assignments")
 output_csv     <- stringr::str_glue("{directory_path}/r_lab{LAB_NUMBER}_grades.csv")
 
 # -------------------
@@ -410,6 +410,6 @@ main <- function() {
 if (identical(environment(), globalenv())) {
   tryCatch(main(), error = function(e) {
     message("Error: ", conditionMessage(e))
-    quit(save = "no", status = 1)
+    if (!interactive()) quit(save = "no", status = 1)
   })
 }
