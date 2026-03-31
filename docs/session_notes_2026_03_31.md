@@ -172,6 +172,46 @@ source("R/oaii_grading_assistant_runner.R")  # grade
 
 ---
 
+## Changes: reliability test script (commits `dcc5b63`, `cf9f77f`)
+
+### New file: `R/reliability_test.R`
+
+A script for measuring grading variability by running the Chat Completions
+pipeline N times per student and saving results to a per-student CSV with
+one row per run.
+
+**Design:**
+- Sources `chat_grading_runner.R` into a child environment via `sys.source()`
+  so `main()` is never triggered — only `grade_student()` is borrowed
+- `grade_n_times(student_file, student_name, n_runs, run_offset)` handles
+  the per-student loop with per-run error catching
+- Output files written beside student submission folders:
+  `{directory_path}/{folder_name}_grades.csv`
+  e.g. `R assignments/lab-9_student_high_grades.csv`
+- Columns: `Run`, `Total`, `OverallComment`, `Q1`–`Q10`,
+  `Q1_feedback`–`Q10_feedback`
+
+**Append support (commit `cf9f77f`):**
+
+Re-running the script appends to existing CSVs rather than overwriting,
+with continuous run numbering. If a CSV already exists, `max(existing$Run)`
+is read and passed as `run_offset` to `grade_n_times()`. This allows a
+total of 100 runs to be accumulated across 10 separate invocations of 10.
+
+Progress messages reflect the actual run range:
+```
+Grading student_high (runs 1–10) ...     ← first invocation
+Grading student_high (runs 11–20) ...    ← second invocation
+```
+
+**Usage:**
+```r
+N <- 10                          # runs per invocation (default 10)
+source("R/reliability_test.R")  # re-run to accumulate more rows
+```
+
+---
+
 ## Git history this session
 
 | Commit | Description |
@@ -181,3 +221,6 @@ source("R/oaii_grading_assistant_runner.R")  # grade
 | `e22c996` | Merge branch `claude/tender-goldwasser` |
 | `df49a23` | Add Chat Completions R runner for apples-to-apples comparison |
 | `7ad7e17` | Make dotenv optional in chat_grading_runner.R |
+| `7152da4` | Add session notes for 2026-03-31 |
+| `dcc5b63` | Add reliability_test.R to measure grading variability |
+| `cf9f77f` | Add append support to reliability_test.R |
