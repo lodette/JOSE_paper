@@ -22,12 +22,12 @@ TEMPERATURE <- 0.1
 Q_COUNT     <- 10L
 
 # ---- paths ----
-RUBRIC_PATH       <- stringr::str_glue("./assignment/rubric_lab_{LAB_NUMBER}.json")
-STARTER_PATH      <- stringr::str_glue("./assignment/lab_{LAB_NUMBER}_starter.qmd")
-SOLUTION_PATH     <- stringr::str_glue("./assignment/lab_{LAB_NUMBER}_solutions.qmd")
+RUBRIC_PATH       <- stringr::str_glue("./R assignments/rubric_lab_{LAB_NUMBER}.json")
+STARTER_PATH      <- stringr::str_glue("./R assignments/lab_{LAB_NUMBER}_starter.qmd")
+SOLUTION_PATH     <- stringr::str_glue("./R assignments/lab_{LAB_NUMBER}_solutions.qmd")
 INSTRUCTIONS_PATH <- "./Python/grader_instructions.txt"
 
-directory_path <- paste0(getwd(), "/assignment")
+directory_path <- paste0(getwd(), "/R assignments")
 output_csv     <- stringr::str_glue("{directory_path}/r_chat_lab{LAB_NUMBER}_grades.csv")
 
 Q_COLS          <- paste0("Q", seq_len(Q_COUNT))
