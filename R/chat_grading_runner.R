@@ -9,8 +9,8 @@
 
 # ---- deps ----
 if (!"librarian" %in% rownames(installed.packages())) install.packages("librarian")
-librarian::shelf(httr2, jsonlite, stringr, readr, fs, dotenv)
-dotenv::load_dot_env()
+librarian::shelf(httr2, jsonlite, stringr, readr, fs)
+if (file.exists(".env")) dotenv::load_dot_env()
 
 # load shared utilities (safe_num)
 source("./R/utils.R")
