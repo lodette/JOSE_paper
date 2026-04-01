@@ -15,8 +15,8 @@ configuration. It calls `load_dotenv()` once on import, reads `LAB_NUMBER` from
 the environment (raising a clear error if absent), and defines all shared
 constants: `MODEL`, `Q_COUNT` (the number of graded questions per lab), and
 resolved file paths for the rubric JSON, starter template, instructor solution,
-and grader instructions — all located in the `assignment/` directory except the
-Python-specific `grader_instructions.txt`, which lives at the project root. The
+and grader instructions — all located in the `assignment/` directory except
+`grader_instructions.txt`, which lives in `Python/`. The
 `build_system_message()` function packages the grader instructions as an OpenAI
 system message. `build_cached_context_messages()` loads the rubric, starter, and
 solution as separate user messages each tagged with
