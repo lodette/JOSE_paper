@@ -422,7 +422,7 @@ If grading fails for an individual student (API timeout, malformed JSON, or miss
 Three pipelines are available. The primary comparison in the JOSE paper is between the **Python** pipeline and the **R (Assistants v2)** pipeline; the **R (Chat Completions)** pipeline is a direct R port of the Python approach and serves as a bridge between the two.
 
 | Aspect | Python | R — Chat Completions | R — Assistants v2 |
-|---|---|---|---|
+|----|----|----|----|
 | **API** | Chat Completions | Chat Completions | Assistants v2 |
 | **Script(s)** | `grading_context.py`, `grade_student.py`, `batch_grade.py` | `chat_grading_runner.R` | `oaii_grading_assistant.R`, `oaii_grading_assistant_runner.R` |
 | **Execution** | Synchronous | Synchronous | Asynchronous with polling |
@@ -481,7 +481,7 @@ Re-running the script **appends** new runs to existing CSVs with continuous run 
 
 **Output files** are written beside the student submission folders:
 
-```
+```         
 {directory_path}/{folder_name}_grades.csv
 ```
 
@@ -495,9 +495,9 @@ Each CSV has columns: `Run`, `Total`, `OverallComment`, `Q1`–`QN`, `Q1_feedbac
 
 **Prerequisites:**
 
-- R per-student CSVs in `R assignments/` matching `lab-{N}_*_grades.csv`
-- Python per-student CSVs in `{BASE_LAB_DIR}/lab-{N}/` with matching names
-- `BASE_LAB_DIR` environment variable set
+-   R per-student CSVs in `R assignments/` matching `lab-{N}_*_grades.csv`
+-   Python per-student CSVs in `{BASE_LAB_DIR}/lab-{N}/` with matching names
+-   `BASE_LAB_DIR` environment variable set
 
 **Usage:**
 
