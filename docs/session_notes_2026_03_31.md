@@ -212,6 +212,87 @@ source("R/reliability_test.R")  # re-run to accumulate more rows
 
 ---
 
+## Changes: Python reliability test (commit `f63e759`)
+
+### New file: `Python/reliability_test.py`
+
+Mirrors `R/reliability_test.R` for the Python pipeline.
+
+- Accepts `--n` flag for number of runs per invocation (default 10)
+- `_get_run_offset()` reads existing CSV to find max Run number for append continuity
+- `grade_n_times()` loops N times, catching per-run exceptions as error rows
+- Appends to existing CSVs without re-writing the header
+- Output: `{BASE_LAB_DIR}/lab-{LAB_NUMBER}/{folder_name}_grades.csv`
+
+**Usage:**
+```bash
+/Users/louisodette/anaconda3/envs/jose_paper/bin/python Python/reliability_test.py
+/Users/louisodette/anaconda3/envs/jose_paper/bin/python Python/reliability_test.py --n 25
+```
+
+**Output location difference vs R:**
+- R saves to: `R assignments/{folder_name}_grades.csv`
+- Python saves to: `{BASE_LAB_DIR}/lab-9/{folder_name}_grades.csv`
+
+---
+
+## Changes: aggregation script (commits `41bef16`, `47c1d38`)
+
+### New file: `R/aggregate_results.R`
+
+Reads per-student reliability CSVs from both pipelines, computes column
+means, and writes `assignment/comparison_summary.csv` with two rows per
+student (Python then R) separated by blank rows.
+
+**Columns:** `Pipeline`, `Student`, `N_Runs`, `Total`, `Q1`–`QN`
+
+- `detect_q_cols()` reads the header of the first CSV and extracts columns
+  matching `^Q[0-9]+$` sorted numerically — no hardcoded question count
+- `compute_means()` averages `Total` and all Q columns across all runs
+- Auto-discovers students from R CSVs and matches to corresponding Python CSVs
+
+**Usage:**
+```r
+source("R/aggregate_results.R")
+# writes: assignment/comparison_summary.csv
+```
+
+---
+
+## Environment setup issues encountered
+
+### Python environment
+The system had two conda installations (`anaconda3` and `miniconda3`)
+conflicting in PATH. `miniconda3` was winning, pointing to Python 3.6.7
+which is too old for `openai>=1.0.0`. Resolution: use full paths explicitly.
+
+```bash
+/Users/louisodette/anaconda3/envs/jose_paper/bin/python --version  # 3.11.15
+/Users/louisodette/anaconda3/envs/jose_paper/bin/pip install -r requirements.txt
+/Users/louisodette/anaconda3/envs/jose_paper/bin/python Python/reliability_test.py
+```
+
+### .env file additions required
+The following variables needed to be added to `.env` before the Python
+pipeline would run:
+
+```
+LAB_NUMBER=9
+BASE_LAB_DIR="/Users/louisodette/Documents/R_projects/JOSE_paper/python assignments"
+```
+
+`LAB_NUMBER` was missing entirely; `BASE_LAB_DIR` had a placeholder value.
+Added `LAB_NUMBER` via `echo "LAB_NUMBER=9" >> .env`.
+
+---
+
+## CI failure: ruff F401 (commit `7129dad`)
+
+`Python/reliability_test.py` had an unused `import sys` that failed the
+ruff F401 lint check in GitHub Actions. Removed the import; CI passes.
+
+---
+
 ## Git history this session
 
 | Commit | Description |
@@ -224,3 +305,8 @@ source("R/reliability_test.R")  # re-run to accumulate more rows
 | `7152da4` | Add session notes for 2026-03-31 |
 | `dcc5b63` | Add reliability_test.R to measure grading variability |
 | `cf9f77f` | Add append support to reliability_test.R |
+| `84ff8f4` | Update session notes with reliability_test.R changes |
+| `f63e759` | Add Python reliability_test.py to mirror R version |
+| `41bef16` | Add aggregate_results.R to summarise reliability test outputs |
+| `47c1d38` | Detect Q_COLS from data in aggregate_results.R |
+| `7129dad` | Fix unused import in reliability_test.py (ruff F401) |
