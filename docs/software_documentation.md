@@ -11,11 +11,12 @@
 3.  [Prerequisites](#3-prerequisites)
 4.  [Installation](#4-installation)
 5.  [Preparing Grading Materials](#5-preparing-grading-materials)
-6.  [Running the R Pipeline](#6-running-the-r-pipeline)
+6.  [Running the R Pipelines](#6-running-the-r-pipelines)
 7.  [Running the Python Pipeline](#7-running-the-python-pipeline)
 8.  [Output Format](#8-output-format)
 9.  [Pipeline Comparison](#9-pipeline-comparison)
 10. [Running Tests](#10-running-tests)
+11. [Reliability Testing](#11-reliability-testing)
 
 ------------------------------------------------------------------------
 
@@ -38,7 +39,11 @@ Both pipelines accept assignments containing any mix of programming questions, o
 .
 ├── R/
 │   ├── oaii_grading_assistant.R         # Setup: upload files, create assistant, save IDs
-│   └── oaii_grading_assistant_runner.R  # Grading: batch loop, poll, parse, write CSV
+│   ├── oaii_grading_assistant_runner.R  # Grading: batch loop, poll, parse, write CSV (Assistants v2)
+│   ├── chat_grading_runner.R            # Grading: Chat Completions pipeline (mirrors Python)
+│   ├── reliability_test.R               # Run grade_student() N times per student; write per-student CSVs
+│   ├── aggregate_results.R              # Aggregate per-student reliability CSVs into comparison summary
+│   └── utils.R                          # Shared helpers (safe_num, etc.)
 │
 ├── Python/
 │   ├── grading_context.py               # Config, shared message builders, prompt caching
@@ -216,11 +221,15 @@ The student ID is extracted from the folder name as the portion after the first 
 
 ------------------------------------------------------------------------
 
-## 6. Running the R Pipeline
+## 6. Running the R Pipelines
 
-The R pipeline runs in two phases. The setup phase is run once per assignment; the grading phase can be re-run at any time.
+Two independent R grading pipelines are provided. The **Assistants v2 pipeline** uploads grading materials to OpenAI and uses `file_search` for context retrieval. The **Chat Completions pipeline** mirrors the Python approach: materials are inlined in every request with ephemeral prompt caching.
 
-### 6.1 Set environment variables
+### 6.1 Assistants v2 pipeline
+
+The Assistants v2 pipeline runs in two phases. The setup phase is run once per assignment; the grading phase can be re-run at any time.
+
+#### 6.1.1 Set environment variables
 
 Add the following to your `.env` or R session:
 
@@ -234,7 +243,7 @@ Or set it before sourcing:
 Sys.setenv(LAB_NUMBER = "9")
 ```
 
-### 6.2 Phase 1 — Setup (run once per assignment)
+#### 6.1.2 Phase 1 — Setup (run once per assignment)
 
 ``` r
 source("R/oaii_grading_assistant.R")
@@ -245,7 +254,7 @@ This performs four steps:
 
 1.  Renders `lab_{N}_solutions.qmd` and `lab_{N}_starter.qmd` to GitHub Flavored Markdown using `quarto::quarto_render()`. Output is written to a temporary file to avoid modifying the source directory.
 2.  Uploads the rubric JSON, rendered solution, and rendered starter to the OpenAI Files API (`purpose = "assistants"`).
-3.  Creates an OpenAI Assistant (`gpt-4.1-mini`) with the `file_search` tool enabled, allowing it to retrieve content from the uploaded files at inference time.
+3.  Creates an OpenAI Assistant (`gpt-5.1`) with the `file_search` tool enabled, allowing it to retrieve content from the uploaded files at inference time.
 4.  Writes the resulting IDs to `assignment/assistant_config.json`:
 
 ``` json
@@ -259,7 +268,7 @@ This performs four steps:
 
 > **Note:** Re-run the setup phase any time the rubric, solution, or starter file changes. New file IDs are needed because the previously uploaded versions remain on OpenAI's servers.
 
-### 6.3 Phase 2 — Grade
+#### 6.1.3 Phase 2 — Grade
 
 Set the path to the student submissions directory and run:
 
@@ -282,6 +291,34 @@ For each student subfolder the runner:
 6.  Extracts the assistant's reply and parses it with `jsonlite::fromJSON()`.
 
 Results are accumulated and written to `assignment/r_lab{N}_grades.csv` (UTF-8 BOM, for Excel compatibility) once all students have been processed.
+
+### 6.2 Chat Completions pipeline
+
+`chat_grading_runner.R` is a second R pipeline that mirrors the Python approach. Grading materials (rubric, starter, solution) are read from `R assignments/` and inlined in every API call with ephemeral prompt caching, keeping the workflow stateless — no setup phase or uploaded files required.
+
+#### 6.2.1 Set environment variables
+
+``` r
+LAB_NUMBER <- 9
+```
+
+`OPENAI_API_KEY` must be set in `.env` or the environment.
+
+#### 6.2.2 Run
+
+``` r
+source("R/chat_grading_runner.R")
+main()
+```
+
+For each student subfolder the runner:
+
+1.  Reads the student's `.qmd` file.
+2.  Assembles a message list: system message (from `Python/grader_instructions.txt`), three cached context messages (rubric, starter, solution each tagged with `cache_control = list(type = "ephemeral")`), and a user message containing the student submission.
+3.  Sends a single synchronous request to `POST /chat/completions` (`gpt-5.1`, `temperature = 0.1`, `response_format = json_object`).
+4.  Parses the reply with `jsonlite::fromJSON()`.
+
+Results are written to `R assignments/r_chat_lab{N}_grades.csv` (UTF-8, with separate `Q*_feedback` columns).
 
 ------------------------------------------------------------------------
 
@@ -382,21 +419,24 @@ If grading fails for an individual student (API timeout, malformed JSON, or miss
 
 ## 9. Pipeline Comparison
 
-| Aspect | Python | R |
-|----|----|----|
-| **API** | Chat Completions | Assistants v2 |
-| **Execution** | Synchronous | Asynchronous with polling |
-| **Setup required** | None | One-time per assignment |
-| **Context delivery** | Inlined in every request | Uploaded once; retrieved via `file_search` |
-| **Caching** | Ephemeral prompt caching | Persistent file storage on OpenAI servers |
-| **Structured output** | `response_format` enforced at API level | `response_format` set on run object |
-| **Output CSV encoding** | UTF-8 | UTF-8 BOM |
-| **Feedback columns** | One column per question (`Q1_feedback`, …) | All feedback concatenated in `Comments` |
-| **Model** | `gpt-5.1` | `gpt-4.1-mini` |
+Three pipelines are available. The primary comparison in the JOSE paper is between the **Python** pipeline and the **R (Assistants v2)** pipeline; the **R (Chat Completions)** pipeline is a direct R port of the Python approach and serves as a bridge between the two.
 
-**Python** is simpler to operate — no setup step, no server-side state, and every grading run is fully self-contained. The full context must fit in a single call, but ephemeral caching keeps token costs manageable across a batch.
+| Aspect | Python | R — Chat Completions | R — Assistants v2 |
+|---|---|---|---|
+| **API** | Chat Completions | Chat Completions | Assistants v2 |
+| **Script(s)** | `grading_context.py`, `grade_student.py`, `batch_grade.py` | `chat_grading_runner.R` | `oaii_grading_assistant.R`, `oaii_grading_assistant_runner.R` |
+| **Execution** | Synchronous | Synchronous | Asynchronous with polling |
+| **Setup required** | None | None | One-time per assignment |
+| **Context delivery** | Inlined in every request | Inlined in every request | Uploaded once; retrieved via `file_search` |
+| **Caching** | Ephemeral prompt caching | Ephemeral prompt caching | Persistent file storage on OpenAI servers |
+| **Structured output** | `response_format = json_object` | `response_format = json_object` | `response_format = json_object` on run object |
+| **Output CSV encoding** | UTF-8 | UTF-8 | UTF-8 BOM |
+| **Feedback columns** | One column per question (`Q1_feedback`, …) | One column per question (`Q1_feedback`, …) | All feedback concatenated in `Comments` |
+| **Model** | `gpt-5.1` | `gpt-5.1` | `gpt-5.1` |
 
-**R** keeps per-call payloads small by offloading grading materials to OpenAI file storage, making repeated grading sessions (e.g. late submissions) cheaper once files are already uploaded. The cost is the two-script workflow and the asynchronous polling logic.
+**Python** and **R (Chat Completions)** are operationally equivalent — stateless, no setup step, same caching strategy. The R Chat Completions runner exists to confirm that the Python pipeline's behaviour is reproducible in native R using the same API surface.
+
+**R (Assistants v2)** offloads grading materials to OpenAI file storage, keeping per-call payloads small. Repeated grading runs (e.g. late submissions) do not re-upload files. The cost is the two-script workflow and the asynchronous polling logic.
 
 ------------------------------------------------------------------------
 
@@ -419,3 +459,52 @@ pytest tests/ --ignore=tests/R
 ```
 
 Tests cover: `load_text()` (UTF-8 reading, `FileNotFoundError`), `build_system_message()` (structure and role), `build_cached_context_messages()` (three messages, ephemeral cache control), and `grade_student_qmd()` (response structure, model name, `response_format`, `FileNotFoundError` on missing submission).
+
+------------------------------------------------------------------------
+
+## 11. Reliability Testing
+
+Reliability testing measures grading variability by running each student submission through a pipeline multiple times with identical inputs and recording the spread of scores across runs.
+
+### 11.1 R reliability test
+
+`R/reliability_test.R` drives repeated grading using the Chat Completions pipeline (`chat_grading_runner.R`). For each student it calls `grade_student()` `N` times and writes one CSV per student containing one row per run.
+
+**Usage:**
+
+``` r
+N <- 10          # number of runs per student (default 10)
+source("R/reliability_test.R")
+```
+
+Re-running the script **appends** new runs to existing CSVs with continuous run numbering, so running it ten times with `N = 10` accumulates 100 rows per student.
+
+**Output files** are written beside the student submission folders:
+
+```
+{directory_path}/{folder_name}_grades.csv
+```
+
+e.g. `R assignments/lab-9_student_high_grades.csv`
+
+Each CSV has columns: `Run`, `Total`, `OverallComment`, `Q1`–`QN`, `Q1_feedback`–`QN_feedback`.
+
+### 11.2 Aggregating results
+
+`R/aggregate_results.R` reads the per-student reliability CSVs produced by both the Python and R pipelines and computes mean and standard deviation for each score column, writing a summary CSV with two rows per student (Python then R), separated by blank rows.
+
+**Prerequisites:**
+
+- R per-student CSVs in `R assignments/` matching `lab-{N}_*_grades.csv`
+- Python per-student CSVs in `{BASE_LAB_DIR}/lab-{N}/` with matching names
+- `BASE_LAB_DIR` environment variable set
+
+**Usage:**
+
+``` r
+source("R/aggregate_results.R")
+```
+
+**Output:** `assignment/comparison_summary.csv`
+
+Numeric columns are formatted as `mean (sd)` (e.g. `4.6 (0.52)`). The question columns (`Q1`, `Q2`, …) are detected automatically from the data — no hardcoded count required.
