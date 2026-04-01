@@ -293,6 +293,24 @@ ruff F401 lint check in GitHub Actions. Removed the import; CI passes.
 
 ---
 
+## Changes: mean (sd) formatting in aggregate_results.R (commit `095580d`)
+
+Updated `compute_means()` in `R/aggregate_results.R` to present each
+numeric result as a formatted string `"mean (sd)"` rather than a plain
+mean, e.g. `"5.6 (1.72)"`. Both mean and SD are rounded to 2 decimal
+places. Applies to `Total` and all `Q*` columns.
+
+The internal `fmt()` helper encapsulates the formatting:
+```r
+fmt <- function(x) {
+  sprintf("%s (%s)",
+          round(mean(x, na.rm = TRUE), 2),
+          round(sd(x,   na.rm = TRUE), 2))
+}
+```
+
+---
+
 ## Git history this session
 
 | Commit | Description |
@@ -310,3 +328,5 @@ ruff F401 lint check in GitHub Actions. Removed the import; CI passes.
 | `41bef16` | Add aggregate_results.R to summarise reliability test outputs |
 | `47c1d38` | Detect Q_COLS from data in aggregate_results.R |
 | `7129dad` | Fix unused import in reliability_test.py (ruff F401) |
+| `7603f21` | Update session notes |
+| `095580d` | Format aggregate_results.R output as 'mean (sd)' |
