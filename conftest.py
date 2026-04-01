@@ -19,4 +19,9 @@ sys.path.insert(0, str(Path(__file__).parent / "Python"))
 
 os.environ.setdefault("LAB_NUMBER", "9")
 os.environ.setdefault("OPENAI_API_KEY", "sk-test-dummy-key-for-ci")
-os.environ.setdefault("BASE_LAB_DIR", "/tmp/test_lab")
+# Point at the repo's assignment/ folder so grading_context.py can find
+# rubric_lab_9.json, lab_9_starter.qmd, and lab_9_solutions.qmd during tests.
+os.environ.setdefault(
+    "BASE_LAB_DIR",
+    str(Path(__file__).parent / "assignment")
+)
