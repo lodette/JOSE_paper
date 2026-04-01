@@ -29,7 +29,7 @@ source("./R/utils.R")
 # Config
 # -------------------
 CONFIG_JSON    <- "./R assignments/assistant_config.json"
-directory_path <- paste0(getwd(), "/R assignments")
+directory_path <- paste0(getwd(), "/R assignments/lab-", LAB_NUMBER)
 output_csv     <- stringr::str_glue("{directory_path}/r_lab{LAB_NUMBER}_grades.csv")
 
 # -------------------
@@ -302,11 +302,21 @@ main <- function() {
   subdirs     <- all_entries[file.info(all_entries)$isdir %in% TRUE]
 
   for (folder in subdirs) { #folder = subdirs[20]
-    student_file <- file.path(folder, stringr::str_glue("lab-{LAB_NUMBER}.qmd"))
-    if (!file.exists(student_file)) {
-      message("Skipping ", basename(folder), stringr::str_glue(". Missing lab-{LAB_NUMBER}.qmd"))
+    matches <- fs::dir_ls(
+      folder,
+      regexp = stringr::str_glue("lab-{LAB_NUMBER}.*\\.qmd$"),
+      type   = "file"
+    )
+    if (length(matches) == 0L) {
+      message("Skipping ", basename(folder), " — no lab-", LAB_NUMBER,
+              " .qmd file found")
       next
     }
+    if (length(matches) > 1L) {
+      warning("Multiple .qmd files match lab-", LAB_NUMBER, " in ",
+              basename(folder), " — using ", basename(matches[[1L]]))
+    }
+    student_file <- matches[[1L]]
 
     student_name <- stringr::str_remove(
       basename(folder),

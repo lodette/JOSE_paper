@@ -10,12 +10,16 @@ if LAB_NUMBER is None:
     raise ValueError("Environment variable LAB_NUMBER is not set. Please define LAB_NUMBER in your .env file.")
 
 BASE_DIR     = Path(__file__).parent   # Python/ directory
-PROJECT_ROOT = BASE_DIR.parent         # project root
 
-# Dynamic file names
-RUBRIC_PATH       = PROJECT_ROOT / f"assignment/rubric_lab_{LAB_NUMBER}.json"
-STARTER_PATH      = PROJECT_ROOT / f"assignment/lab_{LAB_NUMBER}_starter.qmd"
-SOLUTION_PATH     = PROJECT_ROOT / f"assignment/lab_{LAB_NUMBER}_solutions.qmd"
+BASE_LAB_DIR = os.getenv("BASE_LAB_DIR")
+if BASE_LAB_DIR is None:
+    raise ValueError("Environment variable BASE_LAB_DIR is not set. Please define BASE_LAB_DIR in your .env file.")
+BASE_LAB_DIR = Path(BASE_LAB_DIR)
+
+# Grading materials live alongside student submissions in BASE_LAB_DIR
+RUBRIC_PATH       = BASE_LAB_DIR / f"rubric_lab_{LAB_NUMBER}.json"
+STARTER_PATH      = BASE_LAB_DIR / f"lab_{LAB_NUMBER}_starter.qmd"
+SOLUTION_PATH     = BASE_LAB_DIR / f"lab_{LAB_NUMBER}_solutions.qmd"
 INSTRUCTIONS_PATH = BASE_DIR     / "grader_instructions.txt"
 
 MODEL   = "gpt-5.1"
