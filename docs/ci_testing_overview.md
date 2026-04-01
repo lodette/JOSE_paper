@@ -71,7 +71,7 @@ change: `R/**`, `tests/R/**`, `assignment/**`, or the workflow file itself.
 | Set up R | `r-lib/actions/setup-r@v2` (R 4.4, RSPM) | Pre-built CRAN binaries for speed |
 | Cache R library | `actions/cache@v4` keyed on `R/**` | Avoid re-installing packages on every run |
 | Install packages | `Rscript` inline | Install CRAN and GitHub dependencies |
-| Syntax check | `Rscript -e "parse(file=…)"` loop | Verify every `.R` file in `R/` is syntactically valid |
+| Syntax check | `Rscript -e "parse(file=…)"` loop | Verify every `.R` file in `R/` is syntactically valid — covers `oaii_grading_assistant.R`, `oaii_grading_assistant_runner.R`, `chat_grading_runner.R`, `reliability_test.R`, `aggregate_results.R`, and `utils.R` |
 | Run R tests | `Rscript -e "testthat::test_dir('tests/R')"` | Execute all `testthat` tests |
 
 **R packages installed in CI:**
