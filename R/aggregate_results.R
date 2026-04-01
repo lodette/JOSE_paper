@@ -63,24 +63,31 @@ detect_q_cols <- function(csv_path) {
 #'   as returned by \code{detect_q_cols()}.
 #'
 #' @returns A one-row \code{data.frame} with columns \code{Pipeline},
-#'   \code{Student}, \code{N_Runs}, \code{Total}, and the averaged
-#'   question columns, or \code{NULL} if the file is missing.
+#'   \code{Student}, \code{N_Runs}, \code{Total}, and the summarised
+#'   question columns. Numeric columns are formatted as
+#'   \code{"mean (sd)"}, e.g. \code{"5.6 (1.72)"}. Returns \code{NULL}
+#'   if the file is missing.
 compute_means <- function(csv_path, pipeline_label, student_name, q_cols) {
   if (!file.exists(csv_path)) {
     warning("Missing file: ", csv_path)
     return(NULL)
   }
-  df      <- readr::read_csv(csv_path, show_col_types = FALSE)
-  q_means <- stats::setNames(
-    lapply(q_cols, function(q) mean(df[[q]], na.rm = TRUE)),
-    q_cols
-  )
+
+  fmt <- function(x) {
+    sprintf("%s (%s)",
+            round(mean(x, na.rm = TRUE), 2),
+            round(sd(x,   na.rm = TRUE), 2))
+  }
+
+  df     <- readr::read_csv(csv_path, show_col_types = FALSE)
+  q_vals <- stats::setNames(lapply(q_cols, function(q) fmt(df[[q]])), q_cols)
+
   as.data.frame(
     c(list(Pipeline = pipeline_label,
            Student  = student_name,
            N_Runs   = nrow(df),
-           Total    = mean(df$Total, na.rm = TRUE)),
-      q_means),
+           Total    = fmt(df$Total)),
+      q_vals),
     stringsAsFactors = FALSE
   )
 }
