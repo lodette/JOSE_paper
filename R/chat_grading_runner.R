@@ -16,7 +16,7 @@ if (file.exists(".env")) dotenv::load_dot_env()
 source("./R/utils.R")
 
 # ---- config ----
-LAB_NUMBER  <- 9
+LAB_NUMBER  <- 4
 MODEL       <- "gpt-5.1"
 TEMPERATURE <- 0.1
 Q_COUNT     <- 10L
@@ -27,7 +27,7 @@ STARTER_PATH      <- stringr::str_glue("./R assignments/lab_{LAB_NUMBER}_starter
 SOLUTION_PATH     <- stringr::str_glue("./R assignments/lab_{LAB_NUMBER}_solutions.qmd")
 INSTRUCTIONS_PATH <- "./Python/grader_instructions.txt"
 
-directory_path <- paste0(getwd(), "/R assignments")
+directory_path <- paste0(getwd(), "/R assignments/lab-", LAB_NUMBER)
 output_csv     <- stringr::str_glue("{directory_path}/r_chat_lab{LAB_NUMBER}_grades.csv")
 
 Q_COLS          <- paste0("Q", seq_len(Q_COUNT))
@@ -206,13 +206,21 @@ main <- function() {
   records <- list()
 
   for (folder in subdirs) {
-    student_file <- file.path(folder,
-                              stringr::str_glue("lab-{LAB_NUMBER}.qmd"))
-    if (!file.exists(student_file)) {
-      message("Skipping ", basename(folder), ". Missing lab-",
-              LAB_NUMBER, ".qmd")
+    matches <- fs::dir_ls(
+      folder,
+      regexp = stringr::str_glue("lab-{LAB_NUMBER}.*\\.qmd$"),
+      type   = "file"
+    )
+    if (length(matches) == 0L) {
+      message("Skipping ", basename(folder), " — no lab-", LAB_NUMBER,
+              " .qmd file found")
       next
     }
+    if (length(matches) > 1L) {
+      warning("Multiple .qmd files match lab-", LAB_NUMBER, " in ",
+              basename(folder), " — using ", basename(matches[[1L]]))
+    }
+    student_file <- matches[[1L]]
 
     student_name <- stringr::str_remove(
       basename(folder),

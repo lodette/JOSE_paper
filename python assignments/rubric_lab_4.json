@@ -1,0 +1,123 @@
+{
+  "GlobalScoring": {
+    "PerExercisePoints": 3,
+    "Breakdown": ["CodeExecution (1 pt)", "ProcessFidelity (1 pt)", "OutputAccuracy (1 pt)"],
+    "DiscretionaryPenaltyMax": 1,
+    "Rules": [
+      "Start from 3 points per exercise and deduct per sub-criterion.",
+      "Apply an additional discretionary penalty up to -1 if minor issues exist despite meeting criteria (e.g., sloppiness, unclear reasoning, small but notable mistakes).",
+      "Discretionary is a deduction only; never increases points.",
+      "Clamp each exercise score to [0, 3]."
+    ]
+  },
+
+  "Ex1": {
+    "Points": 3,
+    "Criteria": "Data Exploration",
+    "Checks": {
+      "CodeExecution (1 pt)": "Executes code to explore data. Expect `skimr::skim(`.",
+      "ProcessFidelity (1 pt)": "Uses skimr::skim to evaluate data outputting three groups: a summary, and separate details on categorical/factor & numerical",
+      "OutputAccuracy (1 pt)": "States no missing data."
+    },
+    "DiscretionaryPenalty (up to -1 pt)": "Code does not execute to completion."
+  },
+
+  "Ex2": {
+    "Points": 3,
+    "Criteria": "Split Data into Training and Testing sets",
+    "Checks": {
+      "CodeExecution (1 pt)": "Uses rsample::initial_split, rsample::training and rsample::testing. Expect prop = 0.75",
+      "ProcessFidelity (1 pt)": "Uses four executable steps. Expect `initial_split(`, `training(.lm(` and `testing(`.",
+      "OutputAccuracy (1 pt)": "expect ames_train with 2197 rows and ames_test with 733 rows."
+    },
+    "DiscretionaryPenalty (up to -1 pt)": "Training set has wrong dimensions."
+  },
+
+  "Ex3": {
+    "Points": 3,
+    "Criteria": "Recipe Creation and Examination of Center and Scale Steps",
+    "Checks": {
+      "CodeExecution (1 pt)": "With ames_train, uses recipes::recipe. Expect `recipes::recipe(` and recipes::step_X for various X, with steps in correct order",
+      "ProcessFidelity (1 pt)": "Uses `recipes::prep(training = ames_train)` with `broom::tidy()` to examine step outputs. Expect `recipes::prep(`.",
+      "OutputAccuracy (1 pt)": "Expect output of `broom::tidy(1)` and broom_tidy(2) to calculate means and standard deviations respectively. Compare to `dplyr::select`, `dplyr::summarise`, and `tidyr::pivot_longer` output."
+    },
+    "DiscretionaryPenalty (up to -1 pt): Recipe steps in wrong order or scaling/centering not correct."
+  },
+
+  "Ex4": {
+    "Points": 3,
+    "Criteria": "Model Specification with `lm`, `glmnet`, and `ranger using parsnip::"",
+    "Checks": {
+      "CodeExecution (1 pt)": "Specifies three linear regression models. Expect `lm(` and `geom_smooth(` or `abline(`.",
+      "ProcessFidelity (1 pt)": "Follows the two-dataset workflow and visualizes correctly.",
+      "OutputAccuracy (1 pt)": "`Computational engine: lm`, `Computational engine: glmnet`, and `Computational engine: ranger` with `parsnip::tune` arguments for the gmlnet and ranger models."
+    },
+    "DiscretionaryPenalty (up to -1 pt)": "Model specfied incorrectly or specification does not execute."
+  },
+
+  "Ex5": {
+    "Points": 3,
+    "Criteria": "Checking Model Specification with parsnip::translate",
+    "Checks": {
+      "CodeExecution (1 pt)": "parsnip::translate() applied to models greated in Ex4 - lm_mod_base, lm_mod_glmnet, lm_mod_rforest",
+      "ProcessFidelity (1 pt)": "Correctly produces model specifications with model arguments, engine, and fit template.",
+      "OutputAccuracy (1 pt)": "Expect stats::lm(, glmnet::glmnet(, and ranger::ranger( with parsnip:tune("
+    },
+    "DiscretionaryPenalty (up to -1 pt)": "Traslation fails to execute and generate native model specification"
+  },
+
+  "Ex6": {
+    "Points": 3,
+    "Criteria": "Create Bootstrap Datasets from the Ames Housing Training Set",
+    "Checks": {
+      "CodeExecution (1 pt)": "Applies rsample::bootstraps to ames training set. Expect `rsample::bootstraps(` creating variable `train_resamples`",
+      "ProcessFidelity (1 pt)": "Defines `train_resamples` from ames_train bootstrap samples. Expect `rsample::bootstraps(`.",
+      "OutputAccuracy (1 pt)": "Row count of `train_resamples` is 25 with 2 columns."
+    },
+    "DiscretionaryPenalty (up to -1 pt)": "`rsample::bootstraps(` fails to execute"
+  },
+
+  "Ex7": {
+    "Points": 3,
+    "Criteria": "Create `workflowset` to Contain List of Recipes and List of Models",
+    "Checks": {
+      "CodeExecution (1 pt)": "Combines list of recipes and list of models into a workflowset. Expect `workflowsets::workflow_set(`",
+      "ProcessFidelity (1 pt)": "Uses a list of one recipe and a list of three models. Recipe from and Ex3 and models from Ex4. ",
+      "OutputAccuracy (1 pt)": "Variable all_workflows is a data.frame with 4 columns. Output if `all_workflows |> tidyr::unnest(info)` has 3 rows and 7 columns. "
+    },
+    "DiscretionaryPenalty (up to -1 pt)": "`workflowsets::workflow_set(` and/or `all_workflows |> tidyr::unnest(info)` fail(s) to execute."
+  },
+
+  "Ex8": {
+    "Points": 3,
+    "Criteria": "Process Cross Product of Recipe and Models",
+    "Checks": {
+      "CodeExecution (1 pt)": "Trains models on data in `train_resamples` and use parameter grid to tune models. Save result in `all_workflows`. Expect `workflowsets::workflow_map(` and `grid = 5`.,
+      "ProcessFidelity (1 pt)": "Extracts fit metrics from `all_workflows` and filters for `rmse` metric. Arrange models by descending metric values. Expect `tidyr::unnest(`, `dplyr::filter(`, and `dplyr::arrange(`",
+      "OutputAccuracy (1 pt)": "Result is a data.frame with 3 rows and 12 columns. Expect columns `penalty`, `mixture`, `trees`, and `min_n`."
+    },
+    "DiscretionaryPenalty (up to -1 pt)": "Sequence of operations fails to execute."
+  },
+
+  "Ex9": {
+    "Points": 3,
+    "Criteria": "Rank Model Performance Metrics by RMSE",
+    "Checks": {
+      "CodeExecution (1 pt)": "Ranks models by rmse. The metric rsq also appears in group. Expect `workflowsets::rank_results(`.",
+      "ProcessFidelity (1 pt)": "Produces columns `.metric`, `mean`, and `std_err`. Expect `rank_metric = 'rmse'` and `select_best = TRUE`.",
+      "OutputAccuracy (1 pt)": "Produces a data.frame with 6 rows and 9 columns."
+    },
+    "DiscretionaryPenalty (up to -1 pt)": "Fuction `workflowsets::rank_results(` fails to execute to completion."
+  },
+
+  "Ex10": {
+    "Points": 3,
+    "Criteria": "Rank Model Performance Metrics by RMSE and Fit Best Model to Train and Test Sets. Compare Traind and Test by MSE",
+    "Checks": {
+      "CodeExecution (1 pt)": "Pulls workflow by column `wflow_id`. Finalize workflow with tuned parameters and compare fits on test and train sets. Expect `tune::finalize_workflow(` and `tibble::tibble(trees = 1, min_n = 11)`.",
+      "ProcessFidelity (1 pt)": "Fits best model using corresponding tuning parameters and compares OOB prediction errors (MSE) in test vs train data. Expect `fit(` and `best_model_workflow`.",
+      "OutputAccuracy (1 pt)": "Ratio of MSE test/train is 0.1146112, or 12% higher in the test dataset than in the training dataset"
+    },
+    "DiscretionaryPenalty (up to -1 pt)": "The function `tune::finalize_workflow(` fails to execute or either of fits on test and train fail to execute."
+  }
+}
