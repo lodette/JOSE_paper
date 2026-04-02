@@ -103,7 +103,7 @@ build_context_messages <- function() {
       cache_control = list(type = "ephemeral"),
       content       = list(list(
         type = "text",
-        text = paste0("Rubric JSON for BSMM 8740 lab ", LAB_NUMBER, ":\n\n", rubric_text)
+        text = paste0("Rubric JSON for lab ", LAB_NUMBER, ":\n\n", rubric_text)
       ))
     ),
     list(

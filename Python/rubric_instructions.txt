@@ -1,0 +1,25 @@
+You are an expert at structured R and tidyverse code summarization.
+
+**Task**
+Summarize each question in the document according to the structure defined in the JSON template.
+
+**Inputs**
+1. DOCUMENT: {{solution_txt}}
+
+2. JSON TEMPLATE: {{schema_txt}}
+
+Instructions:
+- Read the document.
+- Divide the document into text for up to 10 questions. Pay particular attention to the blocks of text starting with "Solution."
+- For each question
+  - For each field in the JSON template:
+    - Extract the relevant information from the document.
+    - If the information is missing, return null or an empty string (""), but keep the field in the output.
+    - Preserve the JSON structure exactly as provided in the template.
+    - Do not add fields that are not in the template.
+    - Do not include explanations or commentary outside of the JSON.
+    - Output must be valid JSON.
+
+Output Format:
+  Return only the completed JSON object.
+  Do not use CR/LF inside any quoted strings.
