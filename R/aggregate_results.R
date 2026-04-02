@@ -12,7 +12,7 @@
 # ======================================================================
 
 # ---- config ----
-LAB_NUMBER <- 9L
+if (!exists("LAB_NUMBER")) LAB_NUMBER <- 9L
 
 # ---- deps ----
 if (!"librarian" %in% rownames(installed.packages())) install.packages("librarian")
@@ -20,7 +20,7 @@ librarian::shelf(readr, fs, stringr)
 if (file.exists(".env")) dotenv::load_dot_env()
 
 # ---- directories ----
-r_dir        <- paste0(getwd(), "/R assignments")
+r_dir        <- paste0(getwd(), "/R assignments/lab-", LAB_NUMBER)
 
 base_lab_dir <- Sys.getenv("BASE_LAB_DIR", unset = NA_character_)
 if (is.na(base_lab_dir) || !nzchar(base_lab_dir)) {
@@ -28,7 +28,7 @@ if (is.na(base_lab_dir) || !nzchar(base_lab_dir)) {
 }
 python_dir   <- file.path(base_lab_dir, paste0("lab-", LAB_NUMBER))
 
-output_csv   <- paste0(getwd(), "/assignment/comparison_summary.csv")
+output_csv   <- paste0(getwd(), "/assignment/lab_", LAB_NUMBER, "_comparison_summary.csv")
 
 # ---- helpers ----
 
