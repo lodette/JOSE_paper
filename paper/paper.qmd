@@ -24,13 +24,9 @@ csl: apa.csl
 
 # Introduction
 
-This paper describes LLM-based software for auto-grading student assignments. The software is suited both for self-learning and adoption by instructors using long-form text-based assignments to assess both coding skills and understanding of concepts.
+This paper describes LLM-based software for auto-grading student assignments. The software is suited both for self-learning and adoption by instructors using long-form text-based assignments to assess both coding skills and understanding of concepts. The target audience for this paper is instructors in higher education, faced with large class sizes and assessment requirements that do not scale to the class size.
 
 The materials have been made publicly available at: [https://github.com/lodette/JOSE_paper](https://https://github.com/lodette/JOSE_paper) and licensed under the GPL-3.
-
-# Story of the project
-
-This project began as a practical response to an immediate teaching constraint: a growing enrollment, a fixed time budget for grading, and assignments that could not be reduced to simple multiple-choice formats. We iterated from informal prompting to a repeatable workflow that preserves instructor intent, produces per-question feedback, and fits within the operational realities of a 13 week long course.
 
 # Statement of Need
 
@@ -38,23 +34,60 @@ The code described in this paper was created in response to constrained grading 
 
 Our assignments are a mix of programming questions in R, open-ended statistics questions that require both conceptual understanding and practical application, and closed-ended and numerical questions, so manual grading would not scale to the class size, given the time constraint.
 
-This is a not uncommon situation (Akyash et al., 2025; Qiu et al., 2025; Wu-Ja et al., 2025), and approaches to the assessment scaling problem have evolved from rule-based and pattern-matching systems for multiple choice questions and simple short-answer questions (Hussein et al., 2019; Mizumoto & Eguchi, 2023; Ramesh & Sanampudi, 2021; Tack, 2024) through deep-learning and automated code evaluation systems (Misgna et al., 2024; Taghipour & Ng, 2016; Uto et al., 2023), to current sophisticated models leveraging deep learning and large language models (LLMs) (Beseiso et al., 2021; ElMassry et al., 2025; Ren et al., 2025; Song et al., 2024; Wang & Gayed, 2024). The challenge of assessment is particularly acute for massive open on-line courses (MOOCs) (Wu-Ja et al., 2025).
+This is a not uncommon situation [@akyash2025; @qui2025; @on2025], and approaches to the assessment scaling problem have evolved from rule-based and pattern-matching systems for multiple choice questions and simple short-answer questions [@Hussein2019Automated; @Mizumoto2023Exploring; @Ramesh2021An; @Tack2024Automated] through deep-learning and automated code evaluation systems [@Misgna2024A; @Taghipour2016A; @Uto2023Integration], to current sophisticated models leveraging deep learning and large language models (LLMs) [@Beseiso2021A; @ElMassry2025A; @Ren2025Intelligent; @Song2024Automated; @Wang2024EffectivenessOL]. The challenge of assessment is particularly acute for massive open on-line courses (MOOCs) [@on2025].
 
-There are automated grading systems, both commercial (Akindi Inc., 2024; Halgamuge, 2017) and open source (Blank et al., 2022; Hamrick, 2016), though grading systems per se often require adherence to a predefined framework and corresponding assignment engineering. We needed fewer constraints on the form of questions.
+There are automated grading systems, both commercial [@akindi2024; @Halgamuge2017] and open source [@Hamrick2016], though grading systems per se often require adherence to a predefined framework and corresponding assignment engineering. We needed fewer constraints on the form of questions.
 
-While the use of LLMs for grading promise greater flexibility, both for the instructors in writing assignments and the TAs in grading the assignments, the availability of LLM-based graders lags that of more rigid frameworks. At most basic prompts have been published (Jukiewicz, 2025; Qiu et al., 2025; Wu et al., 2024; Zhao et al., 2025). Thus we wrote our own (Sarim & Odette, 2026).
+While the use of LLMs for grading promise greater flexibility, both for the instructors in writing assignments and the TAs in grading the assignments, the availability of LLM-based graders lags that of more rigid frameworks. At most basic prompts have been published [@jukiewicz2025; @qui2025; @the2025; @zhao2025]. Thus we wrote our own [@sarim2026].
 
 We created a system to grade markdown-based assignments. The course assignments are available under an a course Organization on GitHub, and each student had a private repository under the Organization for each assignment. Each student repository contained an assignment in a markdown file; the student followed the instructions in the markdown file and wrote their answers to each question. At the assignment deadline the student committed and push their assignment answers and post-deadline, repositories were cloned and the assessed by our LLM-based grader. The grader return a grade and student feedback for each question in the assignment.
+
+# Story of the project
+
+This project began as a practical response to an immediate teaching constraint: a growing enrollment, a fixed time budget for grading, and assignments that could not be reduced to simple multiple-choice formats. We iterated from informal prompting to a repeatable workflow that preserves instructor intent, produces per-question feedback, and fits within the operational realities of a 13 week long course.
+
+The software was used in a graduate business course on Data Analytics with a class size of 50, weekly student assignments and a union-imposed grading time-budget of 3 hours per week. Allowing for time to prepare grading rubrics for each assignment, process the student work using the application described here and review the results, put us within budget.
 
 # Functionality and Usage
 
 ## Summary of high-level functionality
 
-The codebase provides functionality for grading of student assignments. It deals with varying numbers of assignment questions and can evaluate a mix of programming questions, open-ended statistics questions that require both conceptual understanding and practical application, and closed-ended and numerical questions. In the code, OpenAI's ChatGPT (OpenAI, 2025) is used by default and requires a user API key. With the corresponding API keys, Claude and Gemini could be used (Anthropic, 2025, 2025). Both R-centric and Python-centric versions are provided.
+The codebase provides functionality for grading of student assignments. It deals with varying numbers of assignment questions and can evaluate a mix of programming questions, open-ended statistics questions that require both conceptual understanding and practical application, and closed-ended and numerical questions. In the code, OpenAI's ChatGPT [@chatgpt2025] is used by default and requires a user API key. With the corresponding API keys, Claude and Gemini could be used [@claude2025; @gemini2025]. Both R-centric and Python-centric versions are provided.
 
-Assignments are written in variants of Markdown. The LLM grader is given a folder with all student assignments, where each student's assignment in a separate subfolder, along with an assignment without answers, an assignment with solutions, and a grading rubric in a JSON file. The grader script then processes student submissions in batch. In our application, the course was represented by a Github organization, and each student had a private repository for the assignment, data, and related artifacts. The repositories were then cloned locally for assessment, post-assignment deadline.
+Assignments are written in variants of Markdown. The LLM grader is given a folder with all student assignments, where each student's assignment in a separate subfolder, along with an assignment without answers, an assignment with solutions, and a grading rubric in a JSON file. The grader script then processes student submissions in batch.
 
-The output is a csv file containing, for each student and assignment, the grade for each question in the assignment and text feedback for each question. System parameters include the API credentials for ChatGPT.
+In our application, the course was represented by a Github organization, and each student had a private repository for the assignment, data, and related artifacts. The repositories were then cloned locally for assessment, post-assignment deadline. Howevr, the way student work is collected is not in scope for the application;
+
+The output is a csv file containing, for each student and assignment, the grade for each question in the assignment and text feedback for each question.
+
+## Requirements
+
+### Environment variables 
+
+Both R and Python code use the environment variable `OPENAI_API_KEY` , and the Python version use the environment variable `BASE_LAB_DIR` for the directory containing the assignment.
+
+### Usage
+
+The Python version of the grader assumes a folder in the assignments directory is named lab-N, containing the assignments for assignment 4, and the program executes with the following executed in the terminal
+
+``` python
+python batch_grade.py # uses default (lab 9, or LAB_NUMBER env var if set) 
+python batch_grade.py --lab-number 4 # grade lab 4 
+python batch_grade.py -n 4 # short form
+```
+
+The R version of the grader similarly assumes a folder in the assignments directory is named lab-N, containing the assignments for assignment 4, and the program executes with the following executed in the R Console
+
+``` R
+# Override lab number before calling main()
+LAB_NUMBER <- 4
+source("R/chat_grading_runner.R")
+main()
+```
+
+### Rubrics
+
+The grader assumes a JSON file containing the rubric for the current assignment. The rubric is defined by the schema in the file rubric_schema.json, and a draft can be generated using a graded copy of the assignment and the R function R/json_build.R.
 
 ## Control Flow
 
@@ -65,55 +98,3 @@ The high-level control flow of both versions are shown in Figure 1 below.
 ![Flow of Control in R and Python Versions](images/control_flow_combined-01.png){fig-align="center"}
 
 # References {#references .unnumbered}
-
-::: list
-Akindi Inc. (2024). *Akindi: Paper & online test scoring platform*. <https://akindi.com>. <https://akindi.com>
-
-Akyash, M., Azar, K. Z., & Kamali, H. M. (2025). *StepGrade: Grading programming assignments with context-aware LLMs*. <https://arxiv.org/abs/2503.20851>
-
-Anthropic. (2025). *Claude*. <https://www.anthropic.com/claude>. <https://www.anthropic.com/claude>
-
-Beseiso, M. H., Alzubi, O. A., & Rashaideh, H. (2021). A novel automated essay scoring approach for reliable higher educational assessments. *Journal of Computing in Higher Education*, *33*, 727--746. <https://doi.org/10.1007/s12528-021-09283-1>
-
-Blank, C., Lau, S., & Gonzalez, J. E. (2022). Otter-grader: A lightweight solution for creating and grading Jupyter notebook assignments. *Proceedings of the 53rd ACM Technical Symposium on Computer Science Education (SIGCSE '22)*. <https://doi.org/10.1145/3478432.3499148>
-
-ElMassry, A. M., Zaki, N., Alsheikh, N. O., & Mediani, M. (2025). A systematic review of pretrained models in automated essay scoring. *IEEE Access*, *13*, 121902--121917. <https://doi.org/10.1109/access.2025.3584784>
-
-Halgamuge, M. N. (2017). The use and analysis of anti-plagiarism software: Turnitin tool for formative assessment and feedback. *Computer Applications in Engineering Education*, *25*(6), 895--909. <https://doi.org/10.1002/cae.21842>
-
-Hamrick, J. B. (2016). Creating and grading IPython/Jupyter notebook assignments with nbgrader. *Proceedings of the 47th ACM Technical Symposium on Computing Science Education (SIGCSE '16)*, 242. <https://doi.org/10.1145/2839509.2850507>
-
-Hussein, M. A., Hassan, H. A., & Nassef, M. (2019). Automated language essay scoring systems: A literature review. *PeerJ Computer Science*, *5*. <https://doi.org/10.7717/peerj-cs.208>
-
-Jukiewicz, M. (2025). A systematic comparison of large language models for automated assignment assessment in programming education: Exploring the importance of architecture and vendor. *arXiv Preprint arXiv:2509.26483*. <https://arxiv.org/abs/2509.26483>
-
-Misgna, H., On, B.-W., Lee, I., & Choi, G. (2024). A survey on deep learning-based automated essay scoring and feedback generation. *Artificial Intelligence Review*, *58*. <https://doi.org/10.1007/s10462-024-11017-5>
-
-Mizumoto, A., & Eguchi, M. (2023). Exploring the potential of using an ai language model for automated essay scoring. *SSRN Electronic Journal*. <https://doi.org/10.2139/ssrn.4373111>
-
-OpenAI. (2025). *ChatGPT*. <https://chat.openai.com>. <https://chat.openai.com>
-
-Qiu, H., White, B., Ding, A., Costa, R., Hachem, A., Ding, W., & Chen, P. (2025). SteLLA: A structured grading system using LLMs with RAG. *arXiv Preprint arXiv:2501.09092*. <https://arxiv.org/abs/2501.09092>
-
-Ramesh, D., & Sanampudi, S. K. (2021). An automated essay scoring systems: A systematic literature review. *Artificial Intelligence Review*, *55*, 2495--2527. <https://doi.org/10.1007/s10462-021-10068-2>
-
-Ren, Y., Fan, W., & Wang, J. (2025). Intelligent text analysis for effective evaluation of english language teaching based on deep learning. *Scientific Reports*, *15*. <https://doi.org/10.1038/s41598-025-14320-5>
-
-Sarim, M., & Odette, L. (2026). Grading. In *GitHub repository*. <https://github.com/wallyjulian/grading>; GitHub.
-
-Song, Y., Zhu, Q., Wang, H., & Zheng, Q. (2024). Automated essay scoring and revising based on open-source large language models. *IEEE Transactions on Learning Technologies*, *17*, 1920--1930. <https://doi.org/10.1109/tlt.2024.3396873>
-
-Tack, A. (2024). Automated essay scoring by beata beigman klebanov and nitin madnani. *Computational Linguistics*. <https://doi.org/10.1162/coli_r_00513>
-
-Taghipour, K., & Ng, H. (2016). *A neural approach to automated essay scoring*. 1882--1891. <https://doi.org/10.18653/v1/d16-1193>
-
-Uto, M., Aomi, I., Tsutsumi, E., & Ueno, M. (2023). Integration of prediction scores from various automated essay scoring models using item response theory. *IEEE Transactions on Learning Technologies*, *16*, 983--1000. <https://doi.org/10.1109/tlt.2023.3253215>
-
-Wang, Q., & Gayed, J. M. (2024). Effectiveness of large language models in automated evaluation of argumentative essays: Finetuning vs. Zero-shot prompting. *Computer Assisted Language Learning*. <https://doi.org/10.1080/09588221.2024.2371395>
-
-Wu, X., Saraf, P. P., Lee, G., Latif, E., Liu, N., & Zhai, X. (2024). Unveiling scoring processes: Dissecting the differences between LLMs and human graders in automatic scoring. *arXiv Preprint arXiv:2407.18328*. <https://arxiv.org/abs/2407.18328>
-
-Wu-Ja, L., Hui-Lin, W., & Yu-Guang, Z. (2025). A comparative study of automated grading on programming assignments based on LLMs. *I*. <https://doi.org/10.1109/ICCE-Taiwan66881.2025.11208057>
-
-Zhao, C., Silva, M., & Poulsen, S. (2025). Language models are few-shot graders. *arXiv Preprint arXiv:2502.13337*. <https://arxiv.org/abs/2502.13337>
-:::

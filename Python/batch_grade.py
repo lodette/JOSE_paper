@@ -1,49 +1,48 @@
-import os
+import argparse
 import csv
+import os
 from pathlib import Path
 
-from grading_context import LAB_NUMBER, Q_COUNT
+import grading_context
 from grade_student import grade_student_qmd
 
-BASE_LAB_DIR = os.getenv("BASE_LAB_DIR")
-if BASE_LAB_DIR is None:
-    raise ValueError(
-        "Environment variable BASE_LAB_DIR is not set. "
-        "Please define BASE_LAB_DIR in your .env file."
-    )
 
-# Root folder that contains all the student folders for this lab
-BASE_DIR   = Path(BASE_LAB_DIR) / f"lab-{LAB_NUMBER}"
-OUTPUT_CSV = BASE_DIR / f"lab{LAB_NUMBER}_grades.csv"
+def main(lab_number: int) -> None:
+    """Grade all student submissions for the given lab and write results to CSV.
 
-Q_COLS          = [f"Q{i}" for i in range(1, Q_COUNT + 1)]
-Q_FEEDBACK_COLS = [f"Q{i}_feedback" for i in range(1, Q_COUNT + 1)]
-FIELDNAMES      = ["Student", "Total", "OverallComment"] + Q_COLS + Q_FEEDBACK_COLS
-
-
-def main():
-    """Grade all student submissions for the configured lab and write results to CSV.
-
-    Recursively searches :data:`BASE_DIR` for every file matching
-    ``lab-{LAB_NUMBER}.qmd``, extracts the student ID from the
-    containing folder name (the portion after the first underscore), and
-    calls :func:`grade_student.grade_student_qmd` for each submission.
+    Calls :func:`grading_context.configure` to set lab-specific paths, then
+    recursively searches the lab submission folder for every file matching
+    ``lab-{lab_number}.qmd``, extracts the student ID from the containing
+    folder name (the portion after the first underscore), and calls
+    :func:`grade_student.grade_student_qmd` for each submission.
     Per-student exceptions are caught and recorded as an error row so that
     a single failure does not abort the batch.
 
-    Results are written to :data:`OUTPUT_CSV` as a UTF-8 CSV with the
-    following columns: ``Student``, ``Total``, ``OverallComment``,
+    Results are written to ``{BASE_LAB_DIR}/lab-{lab_number}/lab{lab_number}_grades.csv``
+    as a UTF-8 CSV with columns: ``Student``, ``Total``, ``OverallComment``,
     ``Q1``–``Q{Q_COUNT}``, and ``Q1_feedback``–``Q{Q_COUNT}_feedback``.
     Progress and any per-student errors are printed to stdout.
 
-    :returns: None. Writes :data:`OUTPUT_CSV` as a side effect.
+    :param lab_number: Lab number to grade.
+    :type lab_number: int
+    :returns: None. Writes the output CSV as a side effect.
     :rtype: None
-    :raises FileNotFoundError: If :data:`BASE_DIR` does not exist or
+    :raises FileNotFoundError: If the lab submission folder does not exist or
         contains no matching student submission files.
     """
+    grading_context.configure(lab_number)
+
+    base_dir   = grading_context.BASE_LAB_DIR / f"lab-{lab_number}"
+    output_csv = base_dir / f"lab{lab_number}_grades.csv"
+    q_count    = grading_context.Q_COUNT
+
+    q_cols          = [f"Q{i}" for i in range(1, q_count + 1)]
+    q_feedback_cols = [f"Q{i}_feedback" for i in range(1, q_count + 1)]
+    fieldnames      = ["Student", "Total", "OverallComment"] + q_cols + q_feedback_cols
+
     rows = []
 
-    for path in sorted(BASE_DIR.rglob(f"lab-{LAB_NUMBER}.qmd")):
+    for path in sorted(base_dir.rglob(f"lab-{lab_number}.qmd")):
         student_folder = path.parent
         folder_name    = student_folder.name   # e.g. "lab-9_Ama8777"
 
@@ -59,27 +58,37 @@ def main():
                 "Total":          result.get("total"),
                 "OverallComment": result.get("overall_comment", ""),
             }
-            for q in Q_COLS:
-                qinfo    = questions.get(q, {})
+            for q in q_cols:
+                qinfo             = questions.get(q, {})
                 row[q]            = qinfo.get("grade")
                 row[f"{q}_feedback"] = qinfo.get("feedback")
 
         except Exception as e:
             print(f"  ERROR grading {student_id}: {e}")
             row = {"Student": student_id, "Total": None, "OverallComment": f"Error: {e}"}
-            for q in Q_COLS:
-                row[q]            = None
+            for q in q_cols:
+                row[q]               = None
                 row[f"{q}_feedback"] = None
 
         rows.append(row)
 
-    with OUTPUT_CSV.open("w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=FIELDNAMES)
+    with output_csv.open("w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
         writer.writeheader()
         writer.writerows(rows)
 
-    print(f"Saved grades to {OUTPUT_CSV}")
+    print(f"Saved grades to {output_csv}")
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(
+        description="Grade all student submissions for a lab."
+    )
+    parser.add_argument(
+        "--lab-number", "-n",
+        type=int,
+        default=int(os.getenv("LAB_NUMBER", 9)),
+        help="Lab number to grade (default: %(default)s)",
+    )
+    args = parser.parse_args()
+    main(args.lab_number)

@@ -1,12 +1,13 @@
 import json
 from pathlib import Path
 from openai import OpenAI
+
+import grading_context
 from grading_context import (
     MODEL,
     load_text,
     build_system_message,
     build_cached_context_messages,
-    LAB_NUMBER,
 )
 
 
@@ -58,7 +59,7 @@ def grade_student_qmd(student_qmd_path: Path) -> dict:
             {
                 "type": "text",
                 "text": (
-                    f"Here is a student's lab {LAB_NUMBER} .qmd file. "
+                    f"Here is a student's lab {grading_context.LAB_NUMBER} .qmd file. "
                     "Using the rubric and templates already given above, "
                     "grade this file and return JSON only.\n\n"
                     "=== STUDENT_QMD_START ===\n"
