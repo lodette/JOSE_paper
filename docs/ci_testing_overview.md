@@ -232,7 +232,7 @@ rejected by the OpenAI API but satisfy every local validation check in the
 codebase.
 
 **Fixture files from the repository.** Rather than creating artificial stubs,
-the Python context tests read the real `assignment/rubric_lab_9.json`,
+the Python context tests read the real `assignment/lab_9_rubric.json`,
 `lab_9_starter.qmd`, `lab_9_solutions.qmd`, and
 `Python/grader_instructions.txt`.  This means the tests also catch problems
 such as a missing or malformed rubric file.

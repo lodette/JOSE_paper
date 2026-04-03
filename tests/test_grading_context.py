@@ -3,7 +3,7 @@ Unit tests for grading_context.py.
 
 These tests exercise file-loading helpers and message-builder functions
 without making any API calls.  The assignment fixture files that already
-exist in the repository (assignment/rubric_lab_9.json, etc.) are used
+exist in the repository (assignment/lab_9_rubric.json, etc.) are used
 directly so tests remain self-contained.
 """
 import pytest

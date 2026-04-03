@@ -13,7 +13,7 @@
 MODEL <- "gpt-4.1"
 
 # ---- paths ----
-RUBRIC_PATH  <- stringr::str_glue("./R assignments/rubric_lab_{LAB_NUMBER}.json")
+RUBRIC_PATH  <- stringr::str_glue("./R assignments/lab_{LAB_NUMBER}_rubric.json")
 SOLUTION_QMD <- stringr::str_glue("./R assignments/lab_{LAB_NUMBER}_solutions.qmd")
 STARTER_FILE <- stringr::str_glue("./R assignments/lab_{LAB_NUMBER}_starter.qmd")
 CONFIG_JSON  <- "./R assignments/assistant_config.json"

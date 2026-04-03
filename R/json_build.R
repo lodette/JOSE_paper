@@ -13,7 +13,7 @@
 #   LAB_NUMBER <- 4          # set lab number (default 9)
 #   source("R/json_build.R")
 #
-# Output: assignment/rubric_lab_{LAB_NUMBER}.json
+# Output: assignment/lab_{LAB_NUMBER}_rubric.json
 # ======================================================================
 
 # ---- config ----
@@ -29,7 +29,7 @@ if (file.exists(".env")) dotenv::load_dot_env()
 SOLUTION_PATH     <- stringr::str_glue("./R assignments/lab_{LAB_NUMBER}_solutions.qmd")
 SCHEMA_PATH       <- "./assignment/rubric_schema.json"
 INSTRUCTIONS_PATH <- "./python/rubric_instructions.txt"
-OUTPUT_PATH       <- stringr::str_glue("./assignment/rubric_lab_{LAB_NUMBER}.json")
+OUTPUT_PATH       <- stringr::str_glue("./assignment/lab_{LAB_NUMBER}_rubric.json")
 
 # ---- helpers ----
 
