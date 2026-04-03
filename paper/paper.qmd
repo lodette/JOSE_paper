@@ -64,14 +64,14 @@ The output is a csv file containing, for each student and assignment, the grade 
 
 ### Environment variables 
 
-Both R and Python code use the environment variable `OPENAI_API_KEY` , and the Python version use the environment variable `BASE_LAB_DIR` for the directory containing the assignment.
+Both R and Python versions use the environment variable `OPENAI_API_KEY`. The Python version additionally uses `BASE_LAB_DIR` to specify the directory containing the assignment materials and student submissions.
 
 ### Usage
 
 The Python version of the grader assumes a folder in the assignments directory is named lab-N, containing the assignments for assignment 4, and the program executes with the following executed in the terminal
 
 ``` python
-python batch_grade.py # uses default (lab 9, or LAB_NUMBER env var if set) 
+python batch_grade.py              # uses default (lab 9)
 python batch_grade.py --lab-number 4 # grade lab 4 
 python batch_grade.py -n 4 # short form
 ```
