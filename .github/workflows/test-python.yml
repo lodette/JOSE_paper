@@ -21,7 +21,6 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      LAB_NUMBER: "9"
       OPENAI_API_KEY: "sk-test-dummy-key-for-ci"
       BASE_LAB_DIR: "${{ github.workspace }}/assignment"
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true

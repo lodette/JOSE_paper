@@ -5,25 +5,43 @@ from dotenv import load_dotenv
 # Single authoritative load of .env — all other modules import from here
 load_dotenv()
 
-LAB_NUMBER = os.getenv("LAB_NUMBER")
-if LAB_NUMBER is None:
-    raise ValueError("Environment variable LAB_NUMBER is not set. Please define LAB_NUMBER in your .env file.")
-
 BASE_DIR     = Path(__file__).parent   # Python/ directory
 
 BASE_LAB_DIR = os.getenv("BASE_LAB_DIR")
 if BASE_LAB_DIR is None:
-    raise ValueError("Environment variable BASE_LAB_DIR is not set. Please define BASE_LAB_DIR in your .env file.")
+    raise ValueError(
+        "Environment variable BASE_LAB_DIR is not set. "
+        "Please define BASE_LAB_DIR in your .env file."
+    )
 BASE_LAB_DIR = Path(BASE_LAB_DIR)
 
-# Grading materials live alongside student submissions in BASE_LAB_DIR
-RUBRIC_PATH       = BASE_LAB_DIR / f"lab_{LAB_NUMBER}_rubric.json"
-STARTER_PATH      = BASE_LAB_DIR / f"lab_{LAB_NUMBER}_starter.qmd"
-SOLUTION_PATH     = BASE_LAB_DIR / f"lab_{LAB_NUMBER}_solutions.qmd"
-INSTRUCTIONS_PATH = BASE_DIR     / "grader_instructions.txt"
+INSTRUCTIONS_PATH = BASE_DIR / "grader_instructions.txt"
 
 MODEL   = "gpt-5.1"
 Q_COUNT = 10   # number of graded questions per lab
+
+# Set by configure() before grading begins; None until then.
+LAB_NUMBER    = None
+RUBRIC_PATH   = None
+STARTER_PATH  = None
+SOLUTION_PATH = None
+
+
+def configure(lab_number: int) -> None:
+    """Set the lab number and recompute all lab-specific file paths.
+
+    Must be called once before any grading functions are invoked.
+    Subsequent calls update the module globals in place, allowing the
+    same process to grade a different lab without restarting.
+
+    :param lab_number: Integer lab number (e.g. ``4`` or ``9``).
+    :type lab_number: int
+    """
+    global LAB_NUMBER, RUBRIC_PATH, STARTER_PATH, SOLUTION_PATH
+    LAB_NUMBER    = int(lab_number)
+    RUBRIC_PATH   = BASE_LAB_DIR / f"lab_{LAB_NUMBER}_rubric.json"
+    STARTER_PATH  = BASE_LAB_DIR / f"lab_{LAB_NUMBER}_starter.qmd"
+    SOLUTION_PATH = BASE_LAB_DIR / f"lab_{LAB_NUMBER}_solutions.qmd"
 
 
 def load_text(path) -> str:
@@ -40,7 +58,6 @@ def load_text(path) -> str:
     """
     path = Path(path)
     return path.read_text(encoding="utf-8")
-
 
 
 def build_system_message() -> dict:
@@ -74,6 +91,9 @@ def build_cached_context_messages() -> list:
     and reuse it across the full student batch, reducing both latency and
     token cost.
 
+    :func:`configure` must be called before this function to set the
+    lab-specific paths.
+
     :returns: A list of three OpenAI message dicts — rubric, starter, and
         solution — each marked for ephemeral caching. Intended to be
         positioned after the system message and before the per-student
@@ -82,8 +102,8 @@ def build_cached_context_messages() -> list:
     :raises FileNotFoundError: If any of :data:`RUBRIC_PATH`,
         :data:`STARTER_PATH`, or :data:`SOLUTION_PATH` do not exist.
     """
-    rubric_text = load_text(RUBRIC_PATH)
-    starter_text = load_text(STARTER_PATH)
+    rubric_text   = load_text(RUBRIC_PATH)
+    starter_text  = load_text(STARTER_PATH)
     solution_text = load_text(SOLUTION_PATH)
 
     context_msgs = [

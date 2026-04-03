@@ -15,8 +15,9 @@ Columns: ``Run``, ``Total``, ``OverallComment``,
 
 Usage::
 
-    python Python/reliability_test.py          # 10 runs (default)
-    python Python/reliability_test.py --n 25   # 25 runs
+    python Python/reliability_test.py                    # lab 9, 10 runs (defaults)
+    python Python/reliability_test.py --lab-number 4     # lab 4, 10 runs
+    python Python/reliability_test.py -L 4 --n 25        # lab 4, 25 runs
 """
 
 import argparse
@@ -24,24 +25,11 @@ import csv
 import os
 from pathlib import Path
 
-from grading_context import LAB_NUMBER, Q_COUNT
+import grading_context
 from grade_student import grade_student_qmd
 
-# ---------------------------------------------------------------------------
-# Config
-# ---------------------------------------------------------------------------
-
-BASE_LAB_DIR = os.getenv("BASE_LAB_DIR")
-if BASE_LAB_DIR is None:
-    raise ValueError(
-        "Environment variable BASE_LAB_DIR is not set. "
-        "Please define BASE_LAB_DIR in your .env file."
-    )
-
-BASE_DIR = Path(BASE_LAB_DIR) / f"lab-{LAB_NUMBER}"
-
-Q_COLS          = [f"Q{i}" for i in range(1, Q_COUNT + 1)]
-Q_FEEDBACK_COLS = [f"Q{i}_feedback" for i in range(1, Q_COUNT + 1)]
+Q_COLS          = [f"Q{i}" for i in range(1, grading_context.Q_COUNT + 1)]
+Q_FEEDBACK_COLS = [f"Q{i}_feedback" for i in range(1, grading_context.Q_COUNT + 1)]
 FIELDNAMES      = ["Run", "Total", "OverallComment"] + Q_COLS + Q_FEEDBACK_COLS
 
 
@@ -125,23 +113,29 @@ def grade_n_times(student_path: Path, n_runs: int, run_offset: int) -> list[dict
 # Main
 # ---------------------------------------------------------------------------
 
-def main(n_runs: int = 10) -> None:
+def main(n_runs: int = 10, lab_number: int = 9) -> None:
     """Run the reliability test across all student submissions.
 
-    Walks :data:`BASE_DIR` for student submission folders, grades each
+    Calls :func:`grading_context.configure` to set lab-specific paths, then
+    walks the lab submission folder for student submission files, grades each
     student :data:`n_runs` times, and writes (or appends to) a per-student
     CSV beside the submission folder.
 
     :param n_runs: Number of grading runs per student per invocation.
     :type n_runs: int
+    :param lab_number: Lab number to test.
+    :type lab_number: int
     :returns: None
     :rtype: None
-    :raises FileNotFoundError: If :data:`BASE_DIR` does not exist.
+    :raises FileNotFoundError: If the lab submission folder does not exist.
     """
-    student_paths = sorted(BASE_DIR.rglob(f"lab-{LAB_NUMBER}.qmd"))
+    grading_context.configure(lab_number)
+    base_dir = grading_context.BASE_LAB_DIR / f"lab-{lab_number}"
+
+    student_paths = sorted(base_dir.rglob(f"lab-{lab_number}.qmd"))
     if not student_paths:
         raise FileNotFoundError(
-            f"No lab-{LAB_NUMBER}.qmd files found under {BASE_DIR}"
+            f"No lab-{lab_number}.qmd files found under {base_dir}"
         )
 
     print(f"Starting reliability test: {n_runs} runs x "
@@ -149,7 +143,7 @@ def main(n_runs: int = 10) -> None:
 
     for path in student_paths:
         folder_name = path.parent.name          # e.g. "lab-9_student_high"
-        output_csv  = BASE_DIR / f"{folder_name}_grades.csv"
+        output_csv  = base_dir / f"{folder_name}_grades.csv"
 
         run_offset  = _get_run_offset(output_csv)
         start, end  = run_offset + 1, run_offset + n_runs
@@ -177,5 +171,11 @@ if __name__ == "__main__":
         "--n", type=int, default=10,
         help="Number of grading runs per student (default: 10)"
     )
+    parser.add_argument(
+        "--lab-number", "-L",
+        type=int,
+        default=int(os.getenv("LAB_NUMBER", 9)),
+        help="Lab number to test (default: %(default)s)",
+    )
     args = parser.parse_args()
-    main(n_runs=args.n)
+    main(n_runs=args.n, lab_number=args.lab_number)
