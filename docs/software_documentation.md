@@ -52,7 +52,7 @@ Both pipelines accept assignments containing any mix of programming questions, o
 │   └── grader_instructions.txt          # System prompt passed to the LLM
 │
 ├── assignment/
-│   ├── rubric_lab_9.json                # Grading rubric (per-exercise criteria and points)
+│   ├── lab_9_rubric.json                # Grading rubric (per-exercise criteria and points)
 │   ├── lab_9_starter.qmd                # Assignment template distributed to students
 │   ├── lab_9_solutions.qmd             # Instructor solution
 │   ├── assistant_config.json            # Persisted OpenAI IDs (written by R setup)
@@ -152,7 +152,7 @@ All grading materials live in the `assignment/` directory. Three files are requi
 |-------------------------|-------------------------------------------|
 | `lab_{N}_starter.qmd`   | The assignment template given to students |
 | `lab_{N}_solutions.qmd` | The instructor solution                   |
-| `rubric_lab_{N}.json`   | Per-exercise grading criteria             |
+| `lab_{N}_rubric.json`   | Per-exercise grading criteria             |
 
 Replace `{N}` with the lab number (e.g. `9`). The lab number is read from the `LAB_NUMBER` environment variable at runtime.
 

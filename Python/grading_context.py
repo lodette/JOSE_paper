@@ -17,7 +17,7 @@ if BASE_LAB_DIR is None:
 BASE_LAB_DIR = Path(BASE_LAB_DIR)
 
 # Grading materials live alongside student submissions in BASE_LAB_DIR
-RUBRIC_PATH       = BASE_LAB_DIR / f"rubric_lab_{LAB_NUMBER}.json"
+RUBRIC_PATH       = BASE_LAB_DIR / f"lab_{LAB_NUMBER}_rubric.json"
 STARTER_PATH      = BASE_LAB_DIR / f"lab_{LAB_NUMBER}_starter.qmd"
 SOLUTION_PATH     = BASE_LAB_DIR / f"lab_{LAB_NUMBER}_solutions.qmd"
 INSTRUCTIONS_PATH = BASE_DIR     / "grader_instructions.txt"

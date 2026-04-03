@@ -41,7 +41,7 @@ Solution .qmd ─┘
 │   └── oaii_grading_assistant_runner.R   # R: batch grading loop
 │
 ├── assignment/
-│   ├── rubric_lab_<N>.json               # Shared: per-question rubric
+│   ├── lab_<N>_rubric.json               # Shared: per-question rubric
 │   ├── lab_<N>_solutions.qmd   # Shared: instructor solution
 │   ├── lab_<N>_starter.qmd     # Shared: starter template
 │   └── assistant_config.json             # R only: persisted assistant and file IDs
@@ -66,7 +66,7 @@ Both pipelines require the same three files per lab, placed in `assignment/`:
 
 | File | Description |
 |----|----|
-| `rubric_lab_<N>.json` | Per-question rubric with point values and grading criteria |
+| `lab_<N>_rubric.json` | Per-question rubric with point values and grading criteria |
 | `lab_<N>_solutions.qmd` | Instructor solution for the lab |
 | `lab_<N>_starter.qmd` | Starter template distributed to students |
 
@@ -241,7 +241,7 @@ CSV encoding: **UTF-8 BOM** (Excel compatible).
 
 ## Rubric Format
 
-Each rubric file (`rubric_lab_<N>.json`) follows this schema:
+Each rubric file (`lab_<N>_rubric.json`) follows this schema:
 
 ``` json
 {
@@ -296,7 +296,7 @@ LAB_NUMBER <- 10
 
 Then re-run Phase 1 (setup) to upload the new lab's materials and create a fresh Assistant.
 
-For both pipelines, add the corresponding files to `assignment/`: - `rubric_lab_10.json` - `lab_10_starter.qmd` - `lab_10_solutions.qmd`
+For both pipelines, add the corresponding files to `assignment/`: - `lab_10_rubric.json` - `lab_10_starter.qmd` - `lab_10_solutions.qmd`
 
 ------------------------------------------------------------------------
 

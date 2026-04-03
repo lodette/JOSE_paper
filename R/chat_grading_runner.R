@@ -22,7 +22,7 @@ TEMPERATURE <- 0.1
 Q_COUNT     <- 10L
 
 # ---- paths ----
-RUBRIC_PATH       <- stringr::str_glue("./R assignments/rubric_lab_{LAB_NUMBER}.json")
+RUBRIC_PATH       <- stringr::str_glue("./R assignments/lab_{LAB_NUMBER}_rubric.json")
 STARTER_PATH      <- stringr::str_glue("./R assignments/lab_{LAB_NUMBER}_starter.qmd")
 SOLUTION_PATH     <- stringr::str_glue("./R assignments/lab_{LAB_NUMBER}_solutions.qmd")
 INSTRUCTIONS_PATH <- "./Python/grader_instructions.txt"

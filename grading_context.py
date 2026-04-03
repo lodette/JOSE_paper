@@ -12,7 +12,7 @@ if LAB_NUMBER is None:
 BASE_DIR = Path(__file__).parent
 
 # Dynamic file names
-RUBRIC_PATH       = BASE_DIR / f"assignment/rubric_lab_{LAB_NUMBER}.json"
+RUBRIC_PATH       = BASE_DIR / f"assignment/lab_{LAB_NUMBER}_rubric.json"
 STARTER_PATH      = BASE_DIR / f"assignment/BSMM_8740_lab_{LAB_NUMBER}_starter.qmd"
 SOLUTION_PATH     = BASE_DIR / f"assignment/BSMM_8740_lab_{LAB_NUMBER}_solutions.qmd"
 INSTRUCTIONS_PATH = BASE_DIR / "grader_instructions.txt"
