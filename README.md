@@ -110,17 +110,18 @@ pip install openai python-dotenv
 
     ``` ini
     OPENAI_API_KEY=sk-proj-...      # Your OpenAI API key
-    LAB_NUMBER=9                    # Which lab to grade
     BASE_LAB_DIR=/path/to/your/lab/folder
     ```
 
-    `BASE_LAB_DIR` should be the parent folder containing a subdirectory named `lab-<LAB_NUMBER>`.
+    `BASE_LAB_DIR` should be the parent folder containing a subdirectory named `lab-<N>`.
     Student submission folders are expected inside `lab-<N>/`.
 
 ### Usage
 
 ``` bash
-python Python/batch_grade.py
+python Python/batch_grade.py                  # default lab (9)
+python Python/batch_grade.py --lab-number 4   # grade lab 4
+python Python/batch_grade.py -n 4             # short form
 ```
 
 This will: 1.
@@ -282,16 +283,18 @@ Modify `Python/grader_instructions.txt` to adjust Python grading behaviour witho
 
 ## Adding a New Lab
 
-**Python** — update `.env`:
+**Python** — pass the lab number as a command-line argument:
 
-``` ini
-LAB_NUMBER=10
+``` bash
+python Python/batch_grade.py --lab-number 10
 ```
 
-**R** — update the top of `oaii_grading_assistant_runner.R`:
+**R** — set `LAB_NUMBER` before sourcing the script:
 
 ``` r
 LAB_NUMBER <- 10
+source("R/chat_grading_runner.R")
+main()
 ```
 
 Then re-run Phase 1 (setup) to upload the new lab's materials and create a fresh Assistant.
@@ -310,8 +313,6 @@ Always use `.env.example` as the sharing template.
 
 ## Citation
 
-If you use this system in your research, please cite the associated paper:
+If you use this system in your research, please cite:
 
-```         
-[Citation to be added upon publication]
-```
+Sarim, M., & Odette, L. L. (2026). *LLM-Based Automated Grading System*. Zenodo. <https://doi.org/10.5281/zenodo.19410580>
