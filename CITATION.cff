@@ -17,6 +17,7 @@ version: 1.0.0
 date-released: 2026-04-03
 license: GPL-3.0
 repository-code: https://github.com/lodette/JOSE_paper
+doi: 10.5281/zenodo.19410580
 keywords:
   - automated grading
   - large language models
