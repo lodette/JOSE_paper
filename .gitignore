@@ -21,3 +21,8 @@ Thumbs.db
 # Python environment
 envs/
 envs/**
+renv/
+
+# R environment
+.Rprofile
+.Rhistory

@@ -37,7 +37,7 @@ Python/
 
 assignment/
   assistant_config.json          # Persisted IDs: assistant_id, rubric_file_id, solution_file_id, starter_file_id
-  rubric_lab_9.json              # 6 exercises × 5 pts, three sub-criteria each
+  lab_9_rubric.json              # 6 exercises × 5 pts, three sub-criteria each
   lab_9_starter.qmd
   lab_9_solutions.qmd
   student_1/lab-9.qmd           # Sample student submission
