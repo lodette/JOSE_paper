@@ -1,0 +1,28 @@
+cff-version: 1.2.0
+title: LLM-Based Automated Grading System
+abstract: >-
+  R and Python pipelines for automated grading of student assignments using
+  large language models. Supports a mix of programming, open-ended statistics,
+  and closed-ended questions. Produces per-question grades and feedback via
+  the OpenAI Chat Completions API (Python) and Assistants v2 API (R).
+authors:
+  - family-names: Odette
+    given-names: Louis L.
+    orcid: https://orcid.org/0009-0001-8934-6061
+    affiliation: University of Windsor School of Business
+  - family-names: Sarim
+    given-names: Muhammad
+    affiliation: University of Windsor School of Business
+version: 1.0.0
+date-released: 2026-04-03
+license: GPL-3.0
+repository-code: https://github.com/lodette/JOSE_paper
+keywords:
+  - automated grading
+  - large language models
+  - LLM
+  - OpenAI
+  - R
+  - Python
+  - education
+  - assessment
