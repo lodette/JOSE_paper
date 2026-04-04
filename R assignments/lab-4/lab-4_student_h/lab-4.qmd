@@ -1,0 +1,618 @@
+---
+title: "Lab 4 - The TidyModels Package"
+author: student_h
+format: html
+editor: visual
+self-contained: true
+reference-location: margin
+---
+
+## Introduction
+
+In today's lab, you'll practice building `workflowsets` with `recipes`, `parsnip` models, `rsample` cross validations, model tuning and model comparison.
+
+### Learning goals
+
+By the end of the lab you will...
+
+-   Be able to build workflows to evaluate different models and feature sets.
+
+## Getting started
+
+-   Log in to **your** github account and then go to the [GitHub organization](https://github.com/bsmm-8740-fall-2025) for the course and find the **2025-lab-4-\[your github username\]** repository to complete the lab.
+
+    Create an R project using your **2025-lab-4-\[your github username\]** repository (remember to create a PAT, etc., as in lab-1) and add your answers by editing the `2025-lab-4.qmd` file in your repository.
+
+-   When you are done, be sure to: **save** your document, **stage**, **commit** and [**push**]{.underline} your work.
+
+::: callout-important
+To access Github from the lab, you will need to make sure you are logged in as follows:
+
+-   username: **.\\daladmin**
+-   password: **Business507!**
+
+Remember to (create a PAT and set your git credentials)
+
+-   create your PAT using `usethis::create_github_token()` ,
+-   store your PAT with `gitcreds::gitcreds_set()` ,
+-   set your username and email with
+    -   `usethis::use_git_config( user.name = ___, user.email = ___)`
+:::
+
+## Packages
+
+```{r}
+#| message: false
+# check if 'librarian' is installed and if not, install it
+if (! "librarian" %in% rownames(installed.packages()) ){
+  install.packages("librarian")
+}
+  
+# load packages if not already loaded
+librarian::shelf(
+  tidyverse, magrittr, tidymodels, modeldata, ranger, rsample, broom, recipes, parsnip
+)
+
+# set the efault theme for plotting
+theme_set(theme_bw(base_size = 18) + theme(legend.position = "top"))
+```
+
+::: callout-warning
+## Package installs
+
+If you install packages outside of the ones here, [**remove**]{.underline} your `install.packages(.)` code [**before submitting your solutions**]{.underline}.
+
+Leaving instructions that will install packages may cause your code to fail, but more importantly, it can corrupt the TA/instructor's system.
+:::
+
+## The Data
+
+Today we will be using the Ames Housing Data.
+
+This is a data set from [De Cock](http://jse.amstat.org/v19n3/decock.pdf) (2011) has 82 fields were recorded for 2,930 properties in Ames Iowa in the US. The version in the `modeldata` package is copied from the `AmesHousing` package but does not include a few quality columns that appear to be outcomes rather than predictors.
+
+```{r}
+#| eval: false
+#| label: load ames data
+dat <- modeldata::ames
+```
+
+The data dictionary can be found on the internet:
+
+```{r}
+#| eval: false
+#| label: show ames data dictionary
+cat(readr::read_file("http://jse.amstat.org/v19n3/decock/DataDocumentation.txt"))
+```
+
+## Exercise 1: EDA
+
+Write and execute the code to perform summary EDA on the Ames Housing data using the package `skimr`.
+
+::: {#Q1 .callout-note appearance="simple" icon="false"}
+## YOUR ANSWER Q1:
+
+```{r}
+#| label: run EDA on ames data
+# PLEASE SHOW YOUR WORK
+# Load data
+dat <- modeldata::ames
+
+# Summary EDA
+skimr::skim(dat)
+
+#checking for any missing data
+anyNA(dat)
+
+```
+
+Is there any missing data? **No**
+:::
+
+## Exercise 2: Train / Test Splits
+
+Write and execute code to create training and test datasets. Have the training dataset represent 75% of the total data.
+
+::: {#Q2 .callout-note appearance="simple" icon="false"}
+## YOUR ANSWER Q2:
+
+```{r}
+#| eval: false
+#| label: split ames data. into test and training datasets
+# PLEASE SHOW YOUR WORK
+
+set.seed(8740)
+data_split <- rsample::initial_split(dat, prop = 0.75)
+ames_train <- rsample::training(data_split)
+ames_test  <- rsample::testing(data_split)
+
+```
+:::
+
+## Exercise 3: Data Preprocessing
+
+create a recipe based on the formula **Sale_Price \~ Longitude + Latitude + Lot_Area + Neighborhood + Year_Sold** with the following steps:
+
+-   transform the variable `Sale_Price` to `log(Sale_Price)`
+-   center and scale all predictors
+-   create dummy variables for all nominal variables
+-   transform the variable `Neighborhood` to pool infrequent values (see `recipes::step_other`)
+
+Think carefully about the order of the steps in your recipe.
+
+Finally prep the recipe.
+
+::: {#Q3 .callout-note appearance="simple" icon="false"}
+## YOUR ANSWER Q3:
+
+```{r}
+#| eval: false
+#| label: create recipe, add preprocessing steps then prep the recipe. 
+# PLEASE SHOW YOUR WORK
+norm_recipe <- 
+  recipes::recipe(Sale_Price ~ Longitude + Latitude + Lot_Area + Neighborhood + Year_Sold, data = ames_train) %>% 
+  recipes::step_log(Sale_Price) %>%
+  recipes::step_other(Neighborhood, threshold = 0.01) %>% 
+  recipes::step_dummy(all_nominal_predictors()) %>% 
+  recipes::step_center(all_predictors()) %>%
+  recipes::step_scale(all_predictors()) %>% 
+  recipes::prep()
+
+broom::tidy(norm_recipe)
+```
+:::
+
+## Exercise 4 Modeling
+
+Create three regression models
+
+-   a base regression model using `lm`
+
+-   a regression model using `glmnet`; set the model parameters `penalty` and `mixture` for tuning
+
+-   a tree model using the `ranger` engine; set the model parameters `min_n` and `trees` for tuning
+
+::: {#Q4 .callout-note appearance="simple" icon="false"}
+## YOUR ANSWER Q4:
+
+```{r}
+#| eval: false
+#| label: specify lm, elastic net, and random forest, the latter two with with parameter tuning
+# PLEASE SHOW YOUR WORK
+# Linear model
+lm_mod_base <- 
+  parsnip::linear_reg() %>% 
+  parsnip::set_engine("lm")
+
+# Elastic net model
+lm_mod_glmnet <- 
+  parsnip::linear_reg(penalty = tune(), mixture = tune()) %>% 
+  parsnip::set_engine("glmnet")
+
+# Random forest model
+lm_mod_rforest <- 
+  parsnip::rand_forest(min_n = tune(), trees = tune()) %>% 
+  parsnip::set_engine("ranger") %>% 
+  parsnip::set_mode("regression")
+
+
+```
+:::
+
+## Exercise 5
+
+Use parsnip::translate() on each model to see the code object that is specific to a particular engine
+
+::: {#Q5 .callout-note appearance="simple" icon="false"}
+## YOUR ANSWER Q5:
+
+```{r}
+#| label: show internal code for each model specification, using translate
+# PLEASE SHOW YOUR WORK
+parsnip::translate(lm_mod_base)
+parsnip::translate(lm_mod_glmnet)
+parsnip::translate(lm_mod_rforest)
+```
+:::
+
+## Exercise 6 Bootstrap
+
+Create bootstrap samples for the training dataset. You can leave the parameters set to their defaults
+
+::: {#Q6 .callout-note appearance="simple" icon="false"}
+## YOUR ANSWER Q6:
+
+```{r}
+#| eval: false
+#| label: create bootstrap resamples from the data
+# PLEASE SHOW YOUR WORK
+set.seed(8740)
+train_resamples <- bootstraps(ames_train, times = 25)
+
+# quick look
+train_resamples %>% slice(1:3)
+```
+:::
+
+::: render-commit-push
+This is a good place to render, commit, and push changes to your remote lab repo on GitHub. Click the checkbox next to each file in the Git pane to stage the updates you've made, write an informative commit message, and push. After you push the changes, the Git pane in RStudio should be empty.
+:::
+
+## Exercise 7
+
+Create workflows with `workflowsets::workflow_set` using your recipe and models.
+
+::: {#Q7 .callout-note appearance="simple" icon="false"}
+## YOUR ANSWER Q7:
+
+```{r}
+#| eval: false
+#| label: create a workflowset from your recipe and model specifications
+# PLEASE SHOW YOUR WORK
+library(tidymodels)
+library(workflowsets)
+
+# Recipe (untrained — required for workflow)
+norm_recipe <- 
+  recipe(Sale_Price ~ Longitude + Latitude + Lot_Area + Neighborhood + Year_Sold,
+         data = ames_train) %>%
+  step_log(Sale_Price, base = exp(1)) %>%
+  step_other(Neighborhood, threshold = 0.01) %>%
+  step_dummy(all_nominal_predictors()) %>%
+  step_center(all_predictors()) %>%
+  step_scale(all_predictors())
+
+# Models (with explicit modes set)
+lm_mod_base <- 
+  linear_reg() %>% 
+  set_engine("lm") %>% 
+  set_mode("regression")
+
+glmnet_mod  <- 
+  linear_reg(penalty = tune(), mixture = 1) %>% 
+  set_engine("glmnet") %>% 
+  set_mode("regression")
+
+ranger_mod  <- 
+  rand_forest(mtry = tune(), trees = 1000, min_n = tune()) %>% 
+  set_engine("ranger") %>% 
+  set_mode("regression")
+
+# Combine into a workflow set
+all_workflows <- workflow_set(
+  preproc = list(base = norm_recipe),
+  models  = list(
+    lm = lm_mod_base,
+    glmnet = glmnet_mod,
+    ranger = ranger_mod
+  )
+)
+
+
+
+
+```
+
+```{r}
+#| label: unnest the info column of all_workflows to show the workflow structure 
+# PLEASE SHOW YOUR WORK
+all_workflows %>% 
+  dplyr::select(wflow_id, info)
+
+```
+:::
+
+## Exercise 8
+
+Map the default function (`tune::tune_grid()`) across the workflows in the workflowset you just created and update the variable `all_workflows` with the result.
+
+This will take some time to complete.
+
+```{r}
+#| eval: false
+#| label: map tune_grid across all workflows
+all_workflows <- all_workflows %>% 
+  workflowsets::workflow_map(
+    verbose = TRUE                # enable logging
+    , resamples = train_resamples # a parameter passed to tune::tune_grid()
+    , grid = 5                    # a parameter passed to tune::tune_grid()
+  )
+```
+
+The updated variable `all_workflows` contains a nested column named **result**, and each cell of the column **result** is a tibble containing a nested column named **.metrics**. Write code to
+
+1.  un-nest the metrics in the column .metrics
+
+2.  filter out the rows for the metric rmse
+
+3.  group by wflow_id, order the .estimate column from highest to lowest, and pick out the first row of each group
+
+::: {#Q8 .callout-note appearance="simple" icon="false"}
+## YOUR ANSWER Q8:
+
+```{r}
+#| eval: false
+#| label: unnest metrics, filter for rmse, group by workflow id and order metric in descending order
+# PLEASE SHOW YOUR WORK
+library(tidymodels)
+library(workflowsets)
+
+# --- Recipe (untrained) ---
+norm_recipe <- 
+  recipe(Sale_Price ~ Longitude + Latitude + Lot_Area + Neighborhood + Year_Sold,
+         data = ames_train) %>%
+  step_log(Sale_Price, base = exp(1)) %>%
+  step_other(Neighborhood, threshold = 0.01) %>%
+  step_dummy(all_nominal_predictors()) %>%
+  step_center(all_predictors()) %>%
+  step_scale(all_predictors())
+
+# --- Models (explicit mode) ---
+lm_mod_base <- 
+  linear_reg() %>% 
+  set_engine("lm") %>% 
+  set_mode("regression")
+
+glmnet_mod  <- 
+  linear_reg(penalty = tune(), mixture = 1) %>% 
+  set_engine("glmnet") %>% 
+  set_mode("regression")
+
+ranger_mod  <- 
+  rand_forest(mtry = tune(), trees = 1000, min_n = tune()) %>% 
+  set_engine("ranger") %>% 
+  set_mode("regression")
+
+# --- Workflow set ---
+all_workflows <- workflow_set(
+  preproc = list(base = norm_recipe),
+  models  = list(lm = lm_mod_base,
+                 glmnet = glmnet_mod,
+                 ranger = ranger_mod)
+)
+
+# --- Cross-validation folds ---
+set.seed(123)
+ames_folds <- vfold_cv(ames_train, v = 5)
+
+# --- Tune all workflows ---
+set.seed(123)
+all_workflows_res <- 
+  all_workflows %>%
+  workflow_map(
+    resamples = ames_folds,
+    grid = 10,
+    metrics = metric_set(rmse, rsq),
+    verbose = TRUE
+  )
+
+# --- Rank models by RMSE (shortcut method) ---
+rank_results(all_workflows_res, rank_metric = "rmse", select_best = TRUE)
+
+# --- Explicit main part solution: unnest .metrics, filter rmse, group, sort ---
+library(dplyr)
+library(tidyr)
+
+all_workflows_res %>%
+  dplyr::select(wflow_id, result) %>%          
+  tidyr::unnest(result) %>%                   
+  tidyr::unnest(.metrics) %>%                 
+  dplyr::filter(.metric == "rmse") %>%      
+  dplyr::group_by(wflow_id) %>%             
+  dplyr::arrange(desc(.estimate)) %>%       
+  dplyr::slice(1)                             
+
+```
+
+Look at the columns to the right of the .config column (columns 7,8,9,10) to see the tuned parameters for each model.
+:::
+
+## Exercise 9
+
+Run the code below and compare to your results from exercise 8.
+
+::: {#Q9 .callout-note appearance="simple" icon="false"}
+## YOUR ANSWER Q9:
+
+```{r}
+#| eval: false
+#| label: compare output of rank_results to manual calculation in Q8
+# PLEASE SHOW YOUR WORK
+library(tidymodels)
+library(workflowsets)
+
+# --- Compare model performance (Exercise 8 results) ---
+
+# Get CV results summary manually
+cv_summary <- 
+  all_workflows_res %>%
+  workflowsets::extract_workflow_set_result("base_glmnet") %>%
+  collect_metrics()
+
+# Compare all workflow results side-by-side
+cv_comparison <- 
+  all_workflows_res %>%
+  rank_results(rank_metric = "rmse", select_best = TRUE) %>%
+  dplyr::select(wflow_id, .metric, mean, std_err) %>%
+  tidyr::pivot_wider(names_from = .metric, values_from = mean) %>%
+  arrange(rmse)
+
+# Display comparison table
+cv_comparison
+
+# --- Identify the best model ID based on RMSE ---
+best_model_id <- 
+  cv_comparison %>%
+  slice_min(rmse, n = 1) %>%
+  dplyr::pull(wflow_id)
+
+best_model_id
+
+# --- Print best model info to compare with Exercise 8 ---
+cat("Best model by RMSE (cross-validation):", best_model_id, "\n")
+
+
+
+# compare to your results from exercise 8.
+```
+:::
+
+## Exercise 10
+
+Select the best model per the **rsme** metric using its id.
+
+::: {#Q10a .callout-note appearance="simple" icon="false"}
+## YOUR ANSWER Q10a:
+
+```{r}
+#| eval: false
+#| label: select the est model by the rmse metric
+# PLEASE SHOW YOUR WORK
+
+best_model_workflow <- 
+  all_workflows_res %>%
+  workflowsets::extract_workflow("base_ranger")  
+# using the workflow ID of the best model
+```
+:::
+
+Finalize the workflow by setting the parameters for the best model
+
+::: {#Q10b .callout-note appearance="simple" icon="false"}
+## YOUR ANSWER Q10b:
+
+```{r}
+#| eval: false
+#| label: use finalize_workflow with parameters of best fit to identify best model
+# PLEASE SHOW YOUR WORK
+
+best_model_workflow <- 
+  best_model_workflow %>% 
+  tune::finalize_workflow(best_params)
+    tibble::tibble(mtry = 5, min_n = 10) # enter the name and value of the best-fit parameters from exercise 8
+```
+:::
+
+Now compare the fits
+
+::: {#Q10c .callout-note appearance="simple" icon="false"}
+## YOUR ANSWER Q10c:
+
+```{r}
+#| eval: false
+#| label: finalize, fit, predict, and compare best model
+# PLEASE SHOW YOUR WORK
+
+# Load required libraries
+library(tidymodels)
+library(workflowsets)
+library(dplyr)
+
+# Step 0: Update your recipe with skip = TRUE
+norm_recipe <- 
+  recipe(Sale_Price ~ Longitude + Latitude + Lot_Area + Neighborhood + Year_Sold,
+         data = ames_train) %>%
+  step_log(Sale_Price, base = exp(1), skip = TRUE) %>%  # <-- FIXED HERE
+  step_other(Neighborhood, threshold = 0.01) %>%
+  step_dummy(all_nominal_predictors()) %>%
+  step_center(all_predictors()) %>%
+  step_scale(all_predictors())
+
+# Step 1: Create models
+lm_mod_base <- linear_reg() %>% set_engine("lm") %>% set_mode("regression")
+glmnet_mod  <- linear_reg(penalty = tune(), mixture = 1) %>% set_engine("glmnet") %>% set_mode("regression")
+ranger_mod  <- rand_forest(mtry = tune(), trees = 1000, min_n = tune()) %>% set_engine("ranger") %>% set_mode("regression")
+
+# Step 2: Create workflow set
+all_workflows <- workflow_set(
+  preproc = list(base = norm_recipe),
+  models  = list(
+    lm = lm_mod_base,
+    glmnet = glmnet_mod,
+    ranger = ranger_mod
+  )
+)
+
+# Step 3: Cross-validation folds
+set.seed(123)
+ames_folds <- vfold_cv(ames_train, v = 5)
+
+# Step 4: Tune all workflows
+set.seed(123)
+all_workflows_res <- all_workflows %>%
+  workflow_map(
+    resamples = ames_folds,
+    grid = 10,
+    metrics = metric_set(rmse, rsq),
+    verbose = TRUE
+  )
+
+# Step 5: Identify best workflow ID
+best_wflow_id <- rank_results(all_workflows_res, rank_metric = "rmse", select_best = TRUE) %>%
+  slice(1) %>%
+  pull(wflow_id)
+
+# Step 6: Extract tuning result and best parameters
+best_result <- all_workflows_res %>%
+  filter(wflow_id == best_wflow_id) %>%
+  pull(result) %>%
+  .[[1]]
+
+best_params <- select_best(best_result, metric = "rmse")
+
+# Step 7: Finalize workflow
+best_model_workflow <- all_workflows %>%
+  extract_workflow(best_wflow_id) %>%
+  finalize_workflow(best_params)
+
+# Step 8: Fit on training data
+trained_workflow <- fit(best_model_workflow, data = ames_train)
+
+# Step 9: Predict and evaluate on training data
+train_predictions <- predict(trained_workflow, new_data = ames_train) %>%
+  bind_cols(ames_train %>% select(Sale_Price))
+train_metrics <- metrics(train_predictions, truth = Sale_Price, estimate = .pred)
+
+# Step 10: Predict and evaluate on test data
+test_predictions <- predict(trained_workflow, new_data = ames_test) %>%
+  bind_cols(ames_test %>% select(Sale_Price))
+test_metrics <- metrics(test_predictions, truth = Sale_Price, estimate = .pred)
+
+# Step 11: Print results
+print("Training Metrics:")
+print(train_metrics)
+
+print("Testing Metrics:")
+print(test_metrics)
+
+# Compute MSE for training data
+train_mse <- mean((train_predictions$Sale_Price - train_predictions$.pred)^2)
+
+# Compute MSE for test data
+test_mse <- mean((test_predictions$Sale_Price - test_predictions$.pred)^2)
+
+# Compute ratio
+mse_ratio <- test_mse / train_mse
+
+# Print result
+mse_ratio
+```
+
+What is the ratio of the OOB prediction errors (MSE): test/train? **0.973744**
+:::
+
+::: render-commit-push
+You're done and ready to submit your work! **Save**, **stage**, **commit**, and **push** all remaining changes. You can use the commit message "Done with Lab 4!", and make sure you have committed and pushed all changed files to GitHub (your Git pane in RStudio should be empty) and that **all** documents are updated in your repo on GitHub.
+:::
+
+::: callout-warning
+## Submission
+
+I will pull (copy) everyone's submissions at 5:00pm on the Sunday following class, and I will work only with these copies, so anything submitted after 5:00pm will not be graded. (**don't forget to commit and then push your work by 5:00pm on Sunday!**)
+:::
+
+## Grading
+
+Total points available: 30 points.
+
+![](images/rubric10.png){fig-align="center" width="600"}
