@@ -3,7 +3,7 @@ Root conftest.py — loaded by pytest before any test module.
 
 Sets the environment variables that grading_context.py validates at import
 time, then calls grading_context.configure() so that lab-specific paths are
-resolved before any test runs.  Using os.environ.setdefault ensures
+resolved before any test runs. Using os.environ.setdefault ensures
 user-supplied values (e.g. from a real .env) are not overwritten when running
 locally.
 
@@ -15,6 +15,8 @@ from the Python/ directory.
 import os
 import sys
 from pathlib import Path
+
+import pytest
 
 # Make the Python/ source directory importable from the test suite
 sys.path.insert(0, str(Path(__file__).parent / "Python"))
@@ -29,3 +31,13 @@ os.environ.setdefault(
 
 import grading_context  # noqa: E402 — must come after env vars are set
 grading_context.configure(9)
+
+
+@pytest.fixture(autouse=True)
+def reset_grading_context():
+    """Restore the default repo-backed grading context after each test."""
+    grading_context.BASE_LAB_DIR = Path(os.environ["BASE_LAB_DIR"])
+    grading_context.configure(9)
+    yield
+    grading_context.BASE_LAB_DIR = Path(os.environ["BASE_LAB_DIR"])
+    grading_context.configure(9)
