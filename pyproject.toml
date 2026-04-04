@@ -21,9 +21,8 @@ dev = [
 [tool.setuptools.packages.find]
 where = ["Python"]
 
-[tool.ruff]
+[tool.ruff.lint]
 select = ["F"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-ignore = ["tests/R"]
