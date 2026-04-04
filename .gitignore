@@ -2,8 +2,7 @@
 .env
 env
 
-# Student submission directories and graded output
-lab-*/
+# Graded output
 *_grades.csv
 R vs python/student_mapping.private.csv
 
@@ -12,6 +11,17 @@ __pycache__/
 *.py[cod]
 *.pyo
 .pytest_cache/
+
+# Generated output files
+README.html
+*.dvi
+*.ps
+*.zip
+paper/paper_review.html
+paper/paper_review.md
+
+# Claude Code internals
+.claude/
 
 # OS artifacts
 .DS_Store

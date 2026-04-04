@@ -1,6 +1,5 @@
 ---
 title: "lab 9 - Monte Carlo Methods"
-subtitle: "BSMM 8740 Fall 2025"
 author: "student_high"
 format: html
 editor: visual
