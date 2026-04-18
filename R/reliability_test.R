@@ -45,7 +45,7 @@ directory_path  <- runner_env$directory_path
 Q_COUNT         <- runner_env$Q_COUNT
 Q_COLS          <- paste0("Q", seq_len(Q_COUNT))
 Q_FEEDBACK_COLS <- paste0("Q", seq_len(Q_COUNT), "_feedback")
-COL_ORDER       <- c("Run", "Total", "OverallComment", Q_COLS, Q_FEEDBACK_COLS)
+COL_ORDER       <- c("Run", "Total", "Model_Total", "OverallComment", Q_COLS, Q_FEEDBACK_COLS)
 
 # ---- helpers ----
 
@@ -80,7 +80,7 @@ grade_n_times <- function(student_file, student_name, n_runs, run_offset = 0L) {
 
       r <- list(
         Run            = run_number,
-        Total          = safe_num(result[["total"]]),
+        Model_Total    = safe_num(result[["total"]]),
         OverallComment = as.character(
           if (!is.null(result[["overall_comment"]])) result[["overall_comment"]] else ""
         )
@@ -92,12 +92,15 @@ grade_n_times <- function(student_file, student_name, n_runs, run_offset = 0L) {
           if (!is.null(qinfo[["feedback"]])) qinfo[["feedback"]] else ""
         )
       }
+      # Recompute Total from per-question grades (issue #11).
+      r$Total <- sum(unlist(r[Q_COLS]), na.rm = TRUE)
       r
 
     }, error = function(e) {
       message("    ERROR on run ", run_number, ": ", conditionMessage(e))
       r <- list(Run            = run_number,
                 Total          = NA_real_,
+                Model_Total    = NA_real_,
                 OverallComment = paste("Error:", conditionMessage(e)))
       for (q in Q_COLS) {
         r[[q]]                      <- NA_real_
