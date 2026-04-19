@@ -20,6 +20,9 @@ def _make_student_submission(base_dir: Path, folder_name: str, lab_number: int =
     return qmd_path
 
 
+Q_SUM = sum(range(1, grading_context.Q_COUNT + 1))   # sum of per-question grades in the mock payload
+
+
 def _mock_grade_payload(total: int) -> dict:
     questions = {
         f"Q{i}": {"grade": i, "feedback": f"Feedback for Q{i}"}
@@ -58,7 +61,11 @@ def test_main_writes_expected_csv_for_multiple_students(tmp_path, monkeypatch):
         rows = list(csv.DictReader(f))
 
     assert [row["Student"] for row in rows] == ["student_alpha", "student_beta"]
-    assert [row["Total"] for row in rows] == ["55", "42"]
+    # Total is recomputed from Q1..QN (issue #11), so both rows equal Q_SUM
+    # regardless of the model-returned total. Model_Total preserves what the
+    # model said so divergence remains visible.
+    assert [row["Total"] for row in rows] == [str(Q_SUM), str(Q_SUM)]
+    assert [row["Model_Total"] for row in rows] == ["55", "42"]
     assert rows[0]["OverallComment"] == "Mocked overall comment."
     assert rows[0]["Q1"] == "1"
     assert rows[0]["Q10_feedback"] == "Feedback for Q10"
@@ -86,6 +93,7 @@ def test_main_records_error_row_when_student_grading_fails(tmp_path, monkeypatch
 
     error_row = next(row for row in rows if row["Student"] == "student_beta")
     assert error_row["Total"] == ""
+    assert error_row["Model_Total"] == ""
     assert error_row["OverallComment"] == "Error: simulated API failure"
     assert error_row["Q1"] == ""
     assert error_row["Q10_feedback"] == ""
