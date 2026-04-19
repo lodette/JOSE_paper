@@ -19,6 +19,9 @@ def _make_student_submission(base_dir, folder_name: str, lab_number: int = 9):
     return qmd_path
 
 
+Q_SUM = sum(range(1, grading_context.Q_COUNT + 1))   # sum of per-question grades in the mock payload
+
+
 def _mock_grade_payload(total: int) -> dict:
     questions = {
         f"Q{i}": {"grade": i, "feedback": f"Feedback for Q{i}"}
@@ -59,10 +62,15 @@ def test_grade_n_times_records_error_rows_without_aborting(tmp_path, monkeypatch
     rows = reliability_test.grade_n_times(student_path, n_runs=3, run_offset=4)
 
     assert [row["Run"] for row in rows] == [5, 6, 7]
-    assert rows[0]["Total"] == 27
+    # Total is recomputed from Q1..QN (issue #11); Model_Total preserves the
+    # model-returned value.
+    assert rows[0]["Total"] == Q_SUM
+    assert rows[0]["Model_Total"] == 27
     assert rows[1]["Total"] is None
+    assert rows[1]["Model_Total"] is None
     assert rows[1]["OverallComment"] == "Error: simulated API failure"
-    assert rows[2]["Total"] == 27
+    assert rows[2]["Total"] == Q_SUM
+    assert rows[2]["Model_Total"] == 27
 
 
 def test_main_appends_runs_with_continuous_numbering(tmp_path, monkeypatch):
@@ -85,5 +93,6 @@ def test_main_appends_runs_with_continuous_numbering(tmp_path, monkeypatch):
         rows = list(csv.DictReader(f))
 
     assert [row["Run"] for row in rows] == ["1", "2", "3", "4"]
-    assert all(row["Total"] == "19" for row in rows)
+    assert all(row["Total"] == str(Q_SUM) for row in rows)
+    assert all(row["Model_Total"] == "19" for row in rows)
     assert all(row["Q1_feedback"] == "Feedback for Q1" for row in rows)

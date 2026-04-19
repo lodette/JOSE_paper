@@ -82,11 +82,16 @@ compute_means <- function(csv_path, pipeline_label, student_name, q_cols) {
   df     <- readr::read_csv(csv_path, show_col_types = FALSE)
   q_vals <- stats::setNames(lapply(q_cols, function(q) fmt(df[[q]])), q_cols)
 
+  # Model_Total is the raw model-returned total; Total is recomputed from Q*.
+  # Older CSVs without Model_Total fall back to NA for that column.
+  model_total_col <- if ("Model_Total" %in% names(df)) fmt(df$Model_Total) else NA_character_
+
   as.data.frame(
-    c(list(Pipeline = pipeline_label,
-           Student  = student_name,
-           N_Runs   = nrow(df),
-           Total    = fmt(df$Total)),
+    c(list(Pipeline    = pipeline_label,
+           Student     = student_name,
+           N_Runs      = nrow(df),
+           Total       = fmt(df$Total),
+           Model_Total = model_total_col),
       q_vals),
     stringsAsFactors = FALSE
   )
@@ -115,7 +120,7 @@ main <- function() {
 
   # detect question columns from the first CSV
   q_cols    <- detect_q_cols(sort(r_csvs)[[1]])
-  col_order <- c("Pipeline", "Student", "N_Runs", "Total", q_cols)
+  col_order <- c("Pipeline", "Student", "N_Runs", "Total", "Model_Total", q_cols)
   message("Detected question columns: ", paste(q_cols, collapse = ", "))
 
   # blank separator row

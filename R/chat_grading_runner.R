@@ -32,7 +32,7 @@ output_csv     <- stringr::str_glue("{directory_path}/r_chat_lab{LAB_NUMBER}_gra
 
 Q_COLS          <- paste0("Q", seq_len(Q_COUNT))
 Q_FEEDBACK_COLS <- paste0("Q", seq_len(Q_COUNT), "_feedback")
-COL_ORDER       <- c("Student", "Total", "OverallComment", Q_COLS, Q_FEEDBACK_COLS)
+COL_ORDER       <- c("Student", "Total", "Model_Total", "OverallComment", Q_COLS, Q_FEEDBACK_COLS)
 
 # ---- helpers ----
 
@@ -234,7 +234,7 @@ main <- function() {
 
       r <- list(
         Student        = student_name,
-        Total          = safe_num(result[["total"]]),
+        Model_Total    = safe_num(result[["total"]]),
         OverallComment = as.character(
           if (!is.null(result[["overall_comment"]])) result[["overall_comment"]] else ""
         )
@@ -246,12 +246,15 @@ main <- function() {
           if (!is.null(qinfo[["feedback"]])) qinfo[["feedback"]] else ""
         )
       }
+      # Recompute Total from per-question grades (issue #11).
+      r$Total <- sum(unlist(r[Q_COLS]), na.rm = TRUE)
       r
 
     }, error = function(e) {
       message("  ERROR grading ", student_name, ": ", conditionMessage(e))
       r <- list(Student        = student_name,
                 Total          = NA_real_,
+                Model_Total    = NA_real_,
                 OverallComment = paste("Error:", conditionMessage(e)))
       for (q in Q_COLS) {
         r[[q]]                      <- NA_real_

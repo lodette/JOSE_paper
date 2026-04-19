@@ -30,7 +30,7 @@ from grade_student import grade_student_qmd
 
 Q_COLS          = [f"Q{i}" for i in range(1, grading_context.Q_COUNT + 1)]
 Q_FEEDBACK_COLS = [f"Q{i}_feedback" for i in range(1, grading_context.Q_COUNT + 1)]
-FIELDNAMES      = ["Run", "Total", "OverallComment"] + Q_COLS + Q_FEEDBACK_COLS
+FIELDNAMES      = ["Run", "Total", "Model_Total", "OverallComment"] + Q_COLS + Q_FEEDBACK_COLS
 
 
 # ---------------------------------------------------------------------------
@@ -89,17 +89,20 @@ def grade_n_times(student_path: Path, n_runs: int, run_offset: int) -> list[dict
             questions = result.get("questions", {})
             row = {
                 "Run":            run_number,
-                "Total":          result.get("total"),
                 "OverallComment": result.get("overall_comment", ""),
+                "Model_Total":    result.get("total"),
             }
             for q in Q_COLS:
                 qinfo         = questions.get(q, {})
                 row[q]        = qinfo.get("grade")
                 row[f"{q}_feedback"] = qinfo.get("feedback")
 
+            # Recompute Total from per-question grades (issue #11).
+            row["Total"] = sum(row[q] for q in Q_COLS if isinstance(row[q], (int, float)))
+
         except Exception as e:
             print(f"    ERROR on run {run_number}: {e}")
-            row = {"Run": run_number, "Total": None,
+            row = {"Run": run_number, "Total": None, "Model_Total": None,
                    "OverallComment": f"Error: {e}"}
             for q in Q_COLS:
                 row[q]               = None

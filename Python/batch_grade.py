@@ -37,7 +37,7 @@ def main(lab_number: int) -> None:
 
     q_cols          = [f"Q{i}" for i in range(1, q_count + 1)]
     q_feedback_cols = [f"Q{i}_feedback" for i in range(1, q_count + 1)]
-    fieldnames      = ["Student", "Total", "OverallComment"] + q_cols + q_feedback_cols
+    fieldnames      = ["Student", "Total", "Model_Total", "OverallComment"] + q_cols + q_feedback_cols
 
     rows = []
 
@@ -54,17 +54,22 @@ def main(lab_number: int) -> None:
 
             row = {
                 "Student":        student_id,
-                "Total":          result.get("total"),
                 "OverallComment": result.get("overall_comment", ""),
+                "Model_Total":    result.get("total"),
             }
             for q in q_cols:
                 qinfo             = questions.get(q, {})
                 row[q]            = qinfo.get("grade")
                 row[f"{q}_feedback"] = qinfo.get("feedback")
 
+            # Recompute Total from per-question grades rather than trusting the
+            # model-returned total, which can drift (see issue #11).
+            row["Total"] = sum(row[q] for q in q_cols if isinstance(row[q], (int, float)))
+
         except Exception as e:
             print(f"  ERROR grading {student_id}: {e}")
-            row = {"Student": student_id, "Total": None, "OverallComment": f"Error: {e}"}
+            row = {"Student": student_id, "Total": None, "Model_Total": None,
+                   "OverallComment": f"Error: {e}"}
             for q in q_cols:
                 row[q]               = None
                 row[f"{q}_feedback"] = None
