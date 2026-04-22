@@ -1,17 +1,17 @@
 ---
 title: "LLM-Based Automated Grading System"
 authors:
-  - name: Louis L. Odette
-    orcid: 0009-0001-8934-6061
-    affiliation: 1
   - name: Muhammad Sarim
     orcid: 0009-0008-8751-2514
+    affiliation: 1
+  - name: Louis L. Odette
+    orcid: 0009-0001-8934-6061
     affiliation: 2
 affiliations:
- - name: University of Windsor School of Business, Sessional Instructor
-   index: 1
- - name: University of Windsor School of Business, Teaching Assistant
-   index: 2
+  - name: University of Windsor School of Business, Teaching Assistant
+    index: 1
+  - name: University of Windsor School of Business, Sessional Instructor
+    index: 2
 date: today
 format:
   pdf: #latex:
@@ -21,11 +21,10 @@ format:
     number-sections: true
     include-in-header: preamble.tex
     keep-tex: true
-editor: visual
-bibliography: grading_systems_references.bib
-csl: apa.csl
+bibliography: paper.bib
 ---
 
+```{=html}
 <!--
 JOSE target budget
 
@@ -39,7 +38,7 @@ Acknowledgements          0 to 50 words
 
 Target total             800 to 1000 words
 -->
-
+```
 
 # Summary
 
