@@ -12,7 +12,6 @@ affiliations:
     index: 1
   - name: University of Windsor School of Business, Sessional Instructor
     index: 2
-date: today
 format:
   pdf: #latex:
     documentclass: article
@@ -21,6 +20,7 @@ format:
     number-sections: true
     include-in-header: preamble.tex
     keep-tex: true
+date: April 22, 2024
 bibliography: paper.bib
 ---
 
