@@ -1,6 +1,6 @@
 # LLM-Based Automated Grading System — Software Documentation
 
-**Authors:** Louis L. Odette, Muhammad Sarim **Repository:** <https://github.com/wallyjulian/grading>
+**Authors:** Louis L. Odette, Muhammad Sarim **Repository:** <https://github.com/lodette/JOSE_paper>
 
 ------------------------------------------------------------------------
 
@@ -385,7 +385,7 @@ Both pipelines produce a CSV file with one row per student.
 ### 8.1 R output — `assignment/r_lab{N}_grades.csv`
 
 | Column | Type | Description |
-|----|----|----|
+|------------------------|------------------------|------------------------|
 | `Student` | string | Student identifier (folder name, minus the `lab-{N}_` prefix) |
 | `Q1` … `Q10` | numeric | Grade for each question |
 | `Total` | numeric | Overall total reported by the model |
@@ -396,13 +396,13 @@ Encoding: UTF-8 BOM (for direct opening in Excel without import dialog).
 **Example row:**
 
 | Student | Q1 | Q2 | Q3 | Total | Comments |
-|----|----|----|----|----|----|
+|------------|------------|------------|------------|------------|------------|
 | Ama8777 | 5 | 4 | 3.5 | 23.5 | Q1. Correct. \| Q2. sum(pi) check missing. \| Q3. Derivation incomplete. |
 
 ### 8.2 Python output — `{BASE_LAB_DIR}/lab-{N}/lab{N}_grades.csv`
 
 | Column | Type | Description |
-|----|----|----|
+|------------------------|------------------------|------------------------|
 | `Student` | string | Student identifier |
 | `Total` | numeric | Overall total |
 | `OverallComment` | string | 2–3 sentence summary |
@@ -422,7 +422,7 @@ If grading fails for an individual student (API timeout, malformed JSON, or miss
 Three pipelines are available. The primary comparison in the JOSE paper is between the **Python** pipeline and the **R (Assistants v2)** pipeline; the **R (Chat Completions)** pipeline is a direct R port of the Python approach and serves as a bridge between the two.
 
 | Aspect | Python | R — Chat Completions | R — Assistants v2 |
-|----|----|----|----|
+|------------------|------------------|------------------|------------------|
 | **API** | Chat Completions | Chat Completions | Assistants v2 |
 | **Script(s)** | `grading_context.py`, `grade_student.py`, `batch_grade.py` | `chat_grading_runner.R` | `oaii_grading_assistant.R`, `oaii_grading_assistant_runner.R` |
 | **Execution** | Synchronous | Synchronous | Asynchronous with polling |
