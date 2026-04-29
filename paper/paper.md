@@ -42,7 +42,7 @@ Target total             800 to 1000 words
 
 This paper presents an open-source, LLM-based system for automatically grading long-form, mixed-format student assignments. The system processes student submissions in batch, returning a numeric grade and written feedback for each question, and is implemented in both R and Python. A JSON rubric schema and companion generation script allow instructors to define structured grading criteria without modifying the underlying code. The software is suited both for self-learning and for adoption by instructors who use text-based assignments to assess coding skills and conceptual understanding, and is particularly relevant in higher education settings where class sizes and time constraints make manual grading impractical.
 
-The materials are licensed under the GPL-3 and have been made publicly available at: <https://github.com/lodette/JOSE_paper> and [here](https://doi.org/10.5281/zenodo.19410580).
+The materials are licensed under the GPL-3 and have been made publicly available at: <https://github.com/lodette/JOSE_paper> and <https://doi.org/10.5281/zenodo.19410580>.
 
 # Statement of Need
 
@@ -53,6 +53,8 @@ This situation is not uncommon [@akyash2025; @qui2025; @on2025], and approaches 
 Existing automated grading systems, both commercial [@Halgamuge2017] and open source [@Hamrick2016], often require adherence to a predefined question-and-answer framework and corresponding assignment engineering. LLMs offer greater flexibility: instructors are not constrained to a fixed question format, and grading criteria can be expressed in natural language rather than code. This makes LLM-based grading a natural fit for courses with mixed assignment types.
 
 Despite this promise, usable open-source implementations remain scarce. Most published work stops at prompt examples or informal workflows [@jukiewicz2025; @qui2025; @the2025; @zhao2025] rather than delivering a complete, reusable system. We therefore developed our own [@sarim2026].
+
+A close open-source comparator to our work is NbGrader [@Blank2019; @Hamrick2016]. Nbgrader treats grading as test execution — instructors write executable test cells in a Jupyter notebook and the system reports pass/fail, with manual review reserved for free-response prose — while our work treats grading as judgment, handing the rubric, model solution, and student submission to an LLM that returns a numeric score and written feedback for every question. The two systems aren't really competitors but complements: nbgrader is the right answer when correctness is decidable by code, and our LLM-based grader is the right answer when it isn't.
 
 # Story of the project
 
@@ -67,6 +69,8 @@ The system is deployed in a graduate Data Analytics course with 50 students and 
 Assignments are written in Quarto Markdown and hosted as per-student private repositories under a shared course GitHub organization. At the assignment deadline, students commit their final submission; the instructor clones all repositories and runs the grader, which processes every submission in batch. For each question, the grader returns a numeric grade and written feedback in a single CSV file — the primary grading artifact. Before releasing grades, the instructor spot-checks a sample of submissions for errors or server-side issues.
 
 The grader supports a varying number of questions per assignment and can evaluate programming, open-ended statistics, and closed-ended and numerical responses. OpenAI's ChatGPT is used by default; with corresponding API keys, Anthropic's Claude and Google's Gemini can be substituted. Both R and Python implementations are provided, with dependencies handled via `renv.lock` and `environment.yml` respectively. A JSON rubric schema defines grading criteria, and a helper function generates a draft rubric from a graded copy of the assignment. Full software documentation, including pipeline descriptions, unit tests, CI workflows, and contribution guidelines, is available in the repository.
+
+The repository also contains the file PRIVACY_AND_ETHICS.md which discusses privacy and ethical considerations in the use of LLM graders.
 
 # Validity: Performance Against Rubrics
 
