@@ -19,61 +19,45 @@
     "Points": 3,
     "Criteria": "Perform summary EDA on Ames Housing data using skimr package",
     "Checks": {
-      "CodeExecution (1 pt)": "Code must call `skimr::skim(` function on the `dat` dataset. The pipe operator `|>` should be used to pass the data
-to the `skim(` function.",
-      "ProcessFidelity (1 pt)": "Expected process involves taking the `dat` variable and piping it to the `skimr::skim(` function in a single
-step. No intermediate variables should be created.",
-      "OutputAccuracy (1 pt)": "Output should display a comprehensive summary table showing statistics for all variables in the dataset including
-missing data information, with the conclusion that there is no missing data."
+      "CodeExecution (1 pt)": "Code must call `skimr::skim(` function on the `dat` dataset. The pipe operator `|>` should be used to pass the data\nto the `skim(` function.",
+      "ProcessFidelity (1 pt)": "Expected process involves taking the `dat` variable and piping it to the `skimr::skim(` function in a single\nstep. No intermediate variables should be created.",
+      "OutputAccuracy (1 pt)": "Output should display a comprehensive summary table showing statistics for all variables in the dataset including\nmissing data information, with the conclusion that there is no missing data."
     }
   },
   "Ex2": {
     "Points": 3,
     "Criteria": "Create training and test datasets with 75% training split",
     "Checks": {
-      "CodeExecution (1 pt)": "Code must call `rsample::initial_split(` with `dat` dataset, then use `rsample::training(` and `rsample::testing(`
-functions to extract the splits. `set.seed(` should be called first.",
-      "ProcessFidelity (1 pt)": "Expected process involves 4 steps: setting seed with `set.seed(8740)`, creating split with `data_split` variable,
-extracting training set to `ames_train` variable, and extracting test set to `ames_test` variable.",
-      "OutputAccuracy (1 pt)": "The split should use `strata = 'Sale_Price'` and `prop = 0.75` parameters, resulting in training set with 75% of
-data and test set with 25% of data."
+      "CodeExecution (1 pt)": "Code must call `rsample::initial_split(` with `dat` dataset, then use `rsample::training(` and `rsample::testing(`\nfunctions to extract the splits. `set.seed(` should be called first.",
+      "ProcessFidelity (1 pt)": "Expected process involves 4 steps: setting seed with `set.seed(8740)`, creating split with `data_split` variable,\nextracting training set to `ames_train` variable, and extracting test set to `ames_test` variable.",
+      "OutputAccuracy (1 pt)": "The split should use `strata = 'Sale_Price'` and `prop = 0.75` parameters, resulting in training set with 75% of\ndata and test set with 25% of data."
     }
   },
   "Ex3": {
     "Points": 3,
     "Criteria": "Create and prep a recipe with specified transformations",
     "Checks": {
-      "CodeExecution (1 pt)": "Code must call `recipes::recipe(` with specified formula, then chain `recipes::step_center(`,
-`recipes::step_scale(`, `recipes::step_log(`, `recipes::step_other(`, and `recipes::step_dummy(` functions. Must use `recipes::prep(` and
-`broom::tidy(` for examination.",
-      "ProcessFidelity (1 pt)": "Expected process creates `norm_recipe` variable with recipe using formula Sale_Price ~ Longitude + Latitude +
-Lot_Area + Neighborhood + Year_Sold, applies transformations in correct order, then preps and examines the recipe steps.",
-      "OutputAccuracy (1 pt)": "Recipe should center and scale numeric predictors, log-transform `Sale_Price` using natural log with `base =
-exp(1)`, pool infrequent `Neighborhood` categories, and create dummy variables for nominal predictors."
+      "CodeExecution (1 pt)": "Code must call `recipes::recipe(` with specified formula, then chain `recipes::step_center(`,\n`recipes::step_scale(`, `recipes::step_log(`, `recipes::step_other(`, and `recipes::step_dummy(` functions. Must use `recipes::prep(` and\n`broom::tidy(` for examination.",
+      "ProcessFidelity (1 pt)": "Expected process creates `norm_recipe` variable with recipe using formula Sale_Price ~ Longitude + Latitude +\nLot_Area + Neighborhood + Year_Sold, applies transformations in correct order, then preps and examines the recipe steps.",
+      "OutputAccuracy (1 pt)": "Recipe should center and scale numeric predictors, log-transform `Sale_Price` using natural log with `base =\nexp(1)`, pool infrequent `Neighborhood` categories, and create dummy variables for nominal predictors."
     }
   },
   "Ex4": {
     "Points": 3,
     "Criteria": "Create three regression models using parsnip package",
     "Checks": {
-      "CodeExecution (1 pt)": "Code must call `parsnip::linear_reg(`, `parsnip::rand_forest(`, `parsnip::set_engine(`, and `parsnip::set_mode(`
-functions. Must use `parsnip::tune(` for tunable parameters.",
-      "ProcessFidelity (1 pt)": "Expected process creates three model variables: `lm_mod_base` for basic lm model, `lm_mod_glmnet` for glmnet
-model with tunable parameters, and `lm_mod_rforest` for ranger random forest model with tunable parameters.",
-      "OutputAccuracy (1 pt)": "Models should be: basic linear regression with lm engine, glmnet model with `penalty` and `mixture` set for
-tuning, and random forest model with ranger engine having `min_n` and `trees` set for tuning."
+      "CodeExecution (1 pt)": "Code must call `parsnip::linear_reg(`, `parsnip::rand_forest(`, `parsnip::set_engine(`, and `parsnip::set_mode(`\nfunctions. Must use `parsnip::tune(` for tunable parameters.",
+      "ProcessFidelity (1 pt)": "Expected process creates three model variables: `lm_mod_base` for basic lm model, `lm_mod_glmnet` for glmnet\nmodel with tunable parameters, and `lm_mod_rforest` for ranger random forest model with tunable parameters.",
+      "OutputAccuracy (1 pt)": "Models should be: basic linear regression with lm engine, glmnet model with `penalty` and `mixture` set for\ntuning, and random forest model with ranger engine having `min_n` and `trees` set for tuning."
     }
   },
   "Ex5": {
     "Points": 3,
     "Criteria": "Use parsnip::translate() on each model to see templates",
     "Checks": {
-      "CodeExecution (1 pt)": "Code must call `parsnip::translate(` function on each of the three models: `lm_mod_base`, `lm_mod_glmnet`, and
-`lm_mod_rforest`.",
-      "ProcessFidelity (1 pt)": "Expected process involves applying the `translate(` function to each model variable in sequence to display the
-underlying model templates.",
-      "OutputAccuracy (1 pt)": "Output should show three different model templates corresponding to lm, glmnet, and ranger engines with their
-respective parameter specifications."
+      "CodeExecution (1 pt)": "Code must call `parsnip::translate(` function on each of the three models: `lm_mod_base`, `lm_mod_glmnet`, and\n`lm_mod_rforest`.",
+      "ProcessFidelity (1 pt)": "Expected process involves applying the `translate(` function to each model variable in sequence to display the\nunderlying model templates.",
+      "OutputAccuracy (1 pt)": "Output should show three different model templates corresponding to lm, glmnet, and ranger engines with their\nrespective parameter specifications."
     }
   },
   "Ex6": {
@@ -81,58 +65,44 @@ respective parameter specifications."
     "Criteria": "Create bootstrap samples for training dataset",
     "Checks": {
       "CodeExecution (1 pt)": "Code must call `set.seed(8740)` followed by `rsample::bootstraps(` function on the `ames_train` dataset.",
-      "ProcessFidelity (1 pt)": "Expected process involves setting the random seed and creating `train_resamples` variable using the `bootstraps(`
-function with default parameters.",
-      "OutputAccuracy (1 pt)": "Output should be a bootstrap resampling object containing multiple bootstrap samples of the training data with
-default number of resamples."
+      "ProcessFidelity (1 pt)": "Expected process involves setting the random seed and creating `train_resamples` variable using the `bootstraps(`\nfunction with default parameters.",
+      "OutputAccuracy (1 pt)": "Output should be a bootstrap resampling object containing multiple bootstrap samples of the training data with\ndefault number of resamples."
     }
   },
   "Ex7": {
     "Points": 3,
     "Criteria": "Create workflows with workflow_set and examine structure",
     "Checks": {
-      "CodeExecution (1 pt)": "Code must call `workflowsets::workflow_set(` with preproc and models lists, then use `tidyr::unnest(` on the info
-column to examine contents.",
-      "ProcessFidelity (1 pt)": "Expected process creates `all_workflows` variable using `workflow_set(` function with preproc list containing the
-recipe and models list containing all three models, then unnests the info column for examination.",
-      "OutputAccuracy (1 pt)": "The workflow set should contain 4 columns and when info column is unnested, should show details about each
-workflow including the three models (base, glmnet, forest) combined with the base recipe."
+      "CodeExecution (1 pt)": "Code must call `workflowsets::workflow_set(` with preproc and models lists, then use `tidyr::unnest(` on the info\ncolumn to examine contents.",
+      "ProcessFidelity (1 pt)": "Expected process creates `all_workflows` variable using `workflow_set(` function with preproc list containing the\nrecipe and models list containing all three models, then unnests the info column for examination.",
+      "OutputAccuracy (1 pt)": "The workflow set should contain 4 columns and when info column is unnested, should show details about each\nworkflow including the three models (base, glmnet, forest) combined with the base recipe."
     }
   },
   "Ex8": {
     "Points": 3,
     "Criteria": "Use workflow_map to tune models and extract best metrics",
     "Checks": {
-      "CodeExecution (1 pt)": "Code must call `workflowsets::workflow_map(` with specified parameters, then chain `dplyr::select(`,
-`tidyr::unnest(`, `dplyr::filter(`, `dplyr::group_by(`, `dplyr::arrange(`, and `dplyr::slice(` functions.",
-      "ProcessFidelity (1 pt)": "Expected process updates `all_workflows` with `workflow_map(` results, then unnests result and .metrics columns,
-filters for rmse metric, groups by wflow_id, arranges by .estimate descending, and selects first row per group.",
-      "OutputAccuracy (1 pt)": "Output should show the best rmse values for each workflow (base, glmnet, forest) with their corresponding tuning
-parameters visible in columns 7-10 after the .config column."
+      "CodeExecution (1 pt)": "Code must call `workflowsets::workflow_map(` with specified parameters, then chain `dplyr::select(`,\n`tidyr::unnest(`, `dplyr::filter(`, `dplyr::group_by(`, `dplyr::arrange(`, and `dplyr::slice(` functions.",
+      "ProcessFidelity (1 pt)": "Expected process updates `all_workflows` with `workflow_map(` results, then unnests result and .metrics columns,\nfilters for rmse metric, groups by wflow_id, arranges by .estimate descending, and selects first row per group.",
+      "OutputAccuracy (1 pt)": "Output should show the best rmse values for each workflow (base, glmnet, forest) with their corresponding tuning\nparameters visible in columns 7-10 after the .config column."
     }
   },
   "Ex9": {
     "Points": 3,
     "Criteria": "Compare results using workflowsets::rank_results function",
     "Checks": {
-      "CodeExecution (1 pt)": "Code must call `workflowsets::rank_results(` function with `all_workflows` as input, `rank_metric = 'rmse'` and
-`select_best = TRUE` parameters.",
-      "ProcessFidelity (1 pt)": "Expected process involves running the provided code and comparing output to results from Exercise 8 to verify
-consistency.",
-      "OutputAccuracy (1 pt)": "Output should rank the workflows by rmse performance and show the best configuration for each workflow, matching
-the results from Exercise 8."
+      "CodeExecution (1 pt)": "Code must call `workflowsets::rank_results(` function with `all_workflows` as input, `rank_metric = 'rmse'` and\n`select_best = TRUE` parameters.",
+      "ProcessFidelity (1 pt)": "Expected process involves running the provided code and comparing output to results from Exercise 8 to verify\nconsistency.",
+      "OutputAccuracy (1 pt)": "Output should rank the workflows by rmse performance and show the best configuration for each workflow, matching\nthe results from Exercise 8."
     }
   },
   "Ex10": {
     "Points": 3,
     "Criteria": "Select and finalize best model, compare train/test performance",
     "Checks": {
-      "CodeExecution (1 pt)": "Code must call `workflowsets::extract_workflow(`, `tune::finalize_workflow(`, and `fit(` functions. Must extract
-the 'base_forest' workflow and fit on both training and test data.",
-      "ProcessFidelity (1 pt)": "Expected process creates `best_model_workflow` variable, extracts base_forest workflow, finalizes with best
-parameters (trees = 1, min_n = 11), then creates `training_fit` and `testing_fit` variables by fitting on respective datasets.",
-      "OutputAccuracy (1 pt)": "Final models should show OOB prediction errors with test/train MSE ratio of approximately 0.1146112 or about 12%
-higher in test dataset, demonstrating model performance comparison."
+      "CodeExecution (1 pt)": "Code must call `workflowsets::extract_workflow(`, `tune::finalize_workflow(`, and `fit(` functions. Must extract\nthe 'base_forest' workflow and fit on both training and test data.",
+      "ProcessFidelity (1 pt)": "Expected process creates `best_model_workflow` variable, extracts base_forest workflow, finalizes with best\nparameters (trees = 1, min_n = 11), then creates `training_fit` and `testing_fit` variables by fitting on respective datasets.",
+      "OutputAccuracy (1 pt)": "Final models should show OOB prediction errors with test/train MSE ratio of approximately 0.1146112 or about 12%\nhigher in test dataset, demonstrating model performance comparison."
     }
   }
 }

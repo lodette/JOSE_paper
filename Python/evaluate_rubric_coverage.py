@@ -30,7 +30,7 @@ from tqdm import tqdm
 
 # ── project root ─────────────────────────────────────────────────────────────
 ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT))
+sys.path.insert(0, str(ROOT / "Python"))
 import grading_context  # noqa: E402  (also loads .env and sets BASE_LAB_DIR)
 
 # ── constants ─────────────────────────────────────────────────────────────────
