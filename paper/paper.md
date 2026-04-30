@@ -72,10 +72,12 @@ The grader supports a varying number of questions per assignment and can evaluat
 
 The repository also contains the file PRIVACY_AND_ETHICS.md which discusses privacy and ethical considerations in the use of LLM graders.
 
-# Validity: Performance Against Rubrics
+# Reliability & Validity: Performance Against Rubrics
 
 After each grading run, the instructor reviewed approximately five submissions — selected to span the grade range — checking each question's numeric score against its written feedback for internal consistency. Corrections were infrequent; this review added roughly fifteen minutes per assignment and served as the primary quality gate before grades were released.
 
-To evaluate grading consistency, we ran both pipelines on two assignments — lab 4 (10 students) and lab 9 (3 students) — repeating each run 50 times per student per pipeline. Per-question score variance was low: most questions were graded identically on every run, and in no case did the standard deviation exceed 0.25 grade points. R and Python means per question differed by less than one standard deviation in every case. Variability, where it occurred, was concentrated in questions where student responses were ambiguous, suggesting score variance reflects genuine uncertainty in the submission rather than instability in the grader.
+To evaluate grading reliability, we ran both pipelines on two assignments — lab 4 (10 students) and lab 9 (3 students) — repeating each run 50 times per student per pipeline. Per-question score variance was low: most questions were graded identically on every run. Where variance occurred, standard deviations were typically below 0.25 grade points, with isolated cases reaching 0.5 on questions where student responses were ambiguous. R and Python means per question differed by less than one standard deviation in every case.
+
+Rubric conformance was assessed by classifying each feedback string across all reliability runs using a lightweight LLM meta-evaluation, determining which sub-criteria (CodeExecution, ProcessFidelity, OutputAccuracy) were referenced and whether a deduction was implied. Results indicate the grader reliably attributes deductions to specific criteria for weaker submissions, but systematically under-verifies whichever sub-criterion requires independent checking of a non-obvious property — ProcessFidelity on Lab 9 (where correct numerical output is used as a proxy for correct process) and OutputAccuracy on Lab 4 (where expected outputs are complex R objects rather than scalar values). Details of this assessment are provided in the supplementary rubric conformance report.
 
 # References {#references .unnumbered}
