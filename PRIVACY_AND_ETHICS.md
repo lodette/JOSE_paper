@@ -102,13 +102,21 @@ True de-identification of free-text is a genuinely difficult problem, and re-ide
 
 ------------------------------------------------------------------------
 
-## 5. Human Oversight and the Role of the Instructor
+## 5. Local Inference as a Privacy-Preserving Alternative
+
+The privacy concerns described above arise because student data is transmitted to a third-party API. Deployers for whom this is unacceptable — whether for legal, institutional, or policy reasons — can eliminate the third-party transfer entirely by running the LLM locally. Tools such as Ollama and vLLM expose an OpenAI-compatible API endpoint, meaning the Python pipeline requires only two configuration changes (`base_url` and `model` in `grading_context.py`) to run entirely on institutional hardware. The R Chat Completions pipeline is equally portable. The R Assistants v2 pipeline is not suitable for local adaptation, as it relies on OpenAI-specific features (file upload, assistant and thread management) that have no local equivalent.
+
+Instructors considering local deployment should note that the reliability and rubric conformance results reported in this paper were produced with GPT-4.1. Smaller open-weight models capable of running on local hardware may be less reliable at producing well-formed structured output and rubric-grounded feedback; their performance on grading tasks has not been evaluated in this study. Local deployment is therefore a privacy-preserving option to explore rather than a validated drop-in replacement.
+
+------------------------------------------------------------------------
+
+## 6. Human Oversight and the Role of the Instructor
 
 This tool is designed to assist instructors, not to replace them. AI-generated feedback and scores should be treated as a first-pass signal that informs — but does not determine — final grades. There are several reasons this distinction matters:
 
 **Legal:** Under FERPA and analogous Canadian statutes, grading decisions are education records for which the institution, not a commercial vendor, is responsible. Fully automated grading with no instructor review creates ambiguity about who bears accountability for those records.
 
-**Ethical:** Students have a reasonable expectation that their academic performance will be evaluated by a qualified human who can exercise judgment, take context into account, and be held accountable. AI grading tools can reflect and amplify biases present in their training data (see Section 6); human review provides a check on these effects.
+**Ethical:** Students have a reasonable expectation that their academic performance will be evaluated by a qualified human who can exercise judgment, take context into account, and be held accountable. AI grading tools can reflect and amplify biases present in their training data (see Section 7); human review provides a check on these effects.
 
 **Practical:** Instructors who review AI feedback — particularly for borderline cases — are better positioned to identify systematic errors, provide meaningful individualized feedback, and respond to student challenges.
 
@@ -121,7 +129,7 @@ We recommend that instructors:
 
 ------------------------------------------------------------------------
 
-## 6. Algorithmic Bias and Fairness
+## 7. Algorithmic Bias and Fairness
 
 LLMs used as graders may reflect biases in their training data related to writing style, dialect, linguistic background, and cultural reference. There is documented evidence that models trained predominantly on standard academic English may systematically score writing in African American Vernacular English (AAVE), English as a second language (ESL), or other non-dominant registers differently from functionally equivalent writing in standard academic prose.
 
@@ -135,7 +143,7 @@ These concerns are not unique to AI grading tools — human graders exhibit simi
 
 ------------------------------------------------------------------------
 
-## 7. Recommended Syllabus Disclosure
+## 8. Recommended Syllabus Disclosure
 
 Instructors using this tool are encouraged to disclose its use in their course syllabus. Transparency is increasingly expected by students, required by some institutional policies, and in Quebec is arguably a legal obligation under Law 25. A brief disclosure might read:
 
@@ -143,7 +151,7 @@ Instructors using this tool are encouraged to disclose its use in their course s
 
 ------------------------------------------------------------------------
 
-## 8. Summary Checklist for Deploying Instructors
+## 9. Summary Checklist for Deploying Instructors
 
 | Step | Action |
 |----|----|
@@ -151,6 +159,7 @@ Instructors using this tool are encouraged to disclose its use in their course s
 | **Confirm data residency** | For Ontario and BC institutions, verify that data is processed and stored in Canada |
 | **Confirm no-training terms** | Verify that the API provider will not use student data to train or fine-tune models |
 | **Minimize data transmitted** | Send only assignment content; avoid transmitting names, student IDs, or course metadata |
+| **Consider local inference** | If third-party data transfer is unacceptable, run the LLM locally using an OpenAI-compatible tool (e.g. Ollama, vLLM); see Section 5 |
 | **Conduct PIA (Quebec)** | Complete a Privacy Impact Assessment before deployment if at a Quebec institution |
 | **Retain AI outputs** | Log AI-generated feedback alongside final grades for the required retention period |
 | **Preserve human oversight** | Ensure an instructor reviews AI outputs and makes final grading decisions |
@@ -159,6 +168,6 @@ Instructors using this tool are encouraged to disclose its use in their course s
 
 ------------------------------------------------------------------------
 
-## 9. Disclaimer
+## 10. Disclaimer
 
 This document is intended for informational purposes only and does not constitute legal advice. Privacy law is complex, jurisdiction-specific, and subject to change. Instructors and institutions should consult qualified legal counsel and their institutional privacy office before deploying this tool with real student data.
