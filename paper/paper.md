@@ -70,7 +70,7 @@ Assignments are written in Quarto Markdown and hosted as per-student private rep
 
 The grader supports a varying number of questions per assignment and can evaluate programming, open-ended statistics, and closed-ended and numerical responses. OpenAI's ChatGPT is used by default; with corresponding API keys, Anthropic's Claude and Google's Gemini can be substituted. Both R and Python implementations are provided, with dependencies handled via `renv.lock` and `environment.yml` respectively. A JSON rubric schema defines grading criteria, and a helper function generates a draft rubric from a graded copy of the assignment. Full software documentation, including pipeline descriptions, unit tests, CI workflows, and contribution guidelines, is available in the repository.
 
-The repository also contains the file PRIVACY_AND_ETHICS.md which discusses privacy and ethical considerations in the use of LLM graders.
+The repository also contains `docs/privacy_and_ethics.md`, which discusses privacy and ethical considerations in the use of LLM graders.
 
 # Reliability & Validity: Performance Against Rubrics
 
