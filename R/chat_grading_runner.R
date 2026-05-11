@@ -21,9 +21,14 @@ TEMPERATURE  <- 0.1
 Q_COUNT      <- 10L
 
 # ── LLM provider config ──────────────────────────────────────────────────────
-# Set LLM_PROVIDER=local in .env to route calls to a local LM Studio / Ollama
-# server instead of the OpenAI API.  All variables have safe defaults so that
-# existing OpenAI-based workflows require no .env changes.
+# To use a local LM Studio or Ollama server instead of the OpenAI API, uncomment
+# and fill in the three lines below before sourcing this script.  Leave them
+# commented out to use the OpenAI API with gpt-5.1 (no changes needed).
+#
+# Sys.setenv(LLM_PROVIDER = "local")
+# Sys.setenv(LLM_BASE_URL = "http://localhost:1234/v1")  # LM Studio default; adjust port if needed
+# Sys.setenv(LLM_MODEL    = "<model-name>")              # must match name shown in /v1/models
+#
 LLM_PROVIDER <- Sys.getenv("LLM_PROVIDER", unset = "openai")   # "openai" | "local"
 LLM_BASE_URL <- Sys.getenv("LLM_BASE_URL", unset = "https://api.openai.com/v1")
 CHAT_URL     <- paste0(LLM_BASE_URL, "/chat/completions")
