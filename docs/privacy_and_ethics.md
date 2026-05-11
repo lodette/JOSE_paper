@@ -109,7 +109,7 @@ The privacy concerns described above arise because student data is transmitted t
 ```ini
 LLM_PROVIDER=local
 LLM_BASE_URL=http://localhost:1234/v1   # LM Studio default; adjust for Ollama
-LLM_MODEL=qwen3.6-27b-instruct-q4_k_m  # exact name from /v1/models
+LLM_MODEL=qwen3.6-27b-q4_k_m  # exact name from /v1/models
 LLM_API_KEY=lm-studio                   # any non-empty string; not validated locally
 ```
 
