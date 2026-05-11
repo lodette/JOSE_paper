@@ -17,7 +17,7 @@ def main(lab_number: int) -> None:
     Per-student exceptions are caught and recorded as an error row so that
     a single failure does not abort the batch.
 
-    Results are written to ``{BASE_LAB_DIR}/lab-{lab_number}/lab{lab_number}_grades.csv``
+    Results are written to ``{BASE_LAB_DIR}/lab-{lab_number}/lab{lab_number}_grades_{model}.csv``
     as a UTF-8 CSV with columns: ``Student``, ``Total``, ``OverallComment``,
     ``Q1``–``Q{Q_COUNT}``, and ``Q1_feedback``–``Q{Q_COUNT}_feedback``.
     Progress and any per-student errors are printed to stdout.
@@ -32,7 +32,7 @@ def main(lab_number: int) -> None:
     grading_context.configure(lab_number)
 
     base_dir   = grading_context.BASE_LAB_DIR / f"lab-{lab_number}"
-    output_csv = base_dir / f"lab{lab_number}_grades.csv"
+    output_csv = base_dir / f"lab{lab_number}_grades_{grading_context.model_slug()}.csv"
     q_count    = grading_context.Q_COUNT
 
     q_cols          = [f"Q{i}" for i in range(1, q_count + 1)]

@@ -22,7 +22,8 @@ librarian::shelf(
 
 # set the lab number
 LAB_NUMBER <- 9
-# load shared utilities (defines openai_req and safe_num)
+MODEL      <- Sys.getenv("LLM_MODEL", unset = "gpt-5.1")
+# load shared utilities (defines openai_req, safe_num, model_slug)
 source("./R/utils.R")
 
 # -------------------
@@ -30,7 +31,7 @@ source("./R/utils.R")
 # -------------------
 CONFIG_JSON    <- "./R assignments/assistant_config.json"
 directory_path <- paste0(getwd(), "/R assignments/lab-", LAB_NUMBER)
-output_csv     <- stringr::str_glue("{directory_path}/r_lab{LAB_NUMBER}_grades.csv")
+output_csv     <- stringr::str_glue("{directory_path}/r_lab{LAB_NUMBER}_grades_{model_slug(MODEL)}.csv")
 
 # -------------------
 # Assistants helpers using httr2

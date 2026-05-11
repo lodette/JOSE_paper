@@ -86,13 +86,13 @@ assignment/
 
 The Python pipeline uses the **OpenAI Chat Completions API** and is fully stateless — no setup step is required.
 For each student, a single synchronous API call is made containing the rubric, solution, starter, and submission all inlined in the message list.
-Ephemeral prompt caching (`"cache_control": {"type": "ephemeral"}`) is applied to the shared context so that the rubric, solution, and starter prefix is reused across the full student batch, reducing both latency and token cost.
+Ephemeral prompt caching (`"cache_control": {"type": "ephemeral"}`) is applied to the shared context so that the rubric, solution, and starter prefix is reused across the full student batch, reducing both latency and token cost (OpenAI only; disabled automatically when using a local provider).
 `response_format={"type": "json_object"}` is set on every call to enforce valid JSON output.
 
 ### Prerequisites
 
 -   Python 3.10+
--   An [OpenAI API key](https://platform.openai.com/api-keys)
+-   An [OpenAI API key](https://platform.openai.com/api-keys) *or* a locally running LM Studio / Ollama server
 
 ``` bash
 pip install openai python-dotenv
@@ -111,6 +111,12 @@ pip install openai python-dotenv
     ``` ini
     OPENAI_API_KEY=sk-proj-...      # Your OpenAI API key
     BASE_LAB_DIR=/path/to/your/lab/folder
+
+    # Optional — uncomment to use a local LM Studio / Ollama server instead:
+    # LLM_PROVIDER=local
+    # LLM_BASE_URL=http://localhost:1234/v1
+    # LLM_MODEL=qwen3.6-27b-instruct-q4_k_m
+    # LLM_API_KEY=lm-studio
     ```
 
     `BASE_LAB_DIR` should be the parent folder containing a subdirectory named `lab-<N>`.
@@ -131,7 +137,7 @@ Send each file to the LLM along with the rubric, starter, and solution.
 3.
 Parse the returned JSON grade.
 4.
-Write all results to `<BASE_LAB_DIR>/lab-<N>/lab<N>_grades.csv`.
+Write all results to `<BASE_LAB_DIR>/lab-<N>/lab<N>_grades_{model}.csv`.
 
 ### Output Format (Python)
 
@@ -159,7 +165,7 @@ It runs in two phases: a one-time **setup** that uploads grading materials and c
 
 -   R 4.1+ with the following packages (installed automatically via `librarian`): `tidyverse`, `rmarkdown`, `httr2`, `jsonlite`, `fs`, `quarto`, `cezarykuran/oaii`
 -   [Quarto CLI](https://quarto.org/docs/get-started/) (for rendering `.qmd` files during setup)
--   An [OpenAI API key](https://platform.openai.com/api-keys)
+-   An [OpenAI API key](https://platform.openai.com/api-keys) *or* a locally running LM Studio / Ollama server
 
 ### Configuration
 
@@ -207,7 +213,7 @@ Poll until each run completes (up to 180 s at 0.7 s intervals).
 5.
 Parse the JSON response directly via `jsonlite::fromJSON()`.
 6.
-Write results to `assignment/r_lab<N>_grades.csv`.
+Write results to `assignment/r_lab<N>_grades_{model}.csv`.
 
 ### Output Format (R)
 
@@ -233,7 +239,7 @@ CSV encoding: **UTF-8 BOM** (Excel compatible).
 | **Caching** | Ephemeral prompt caching on the shared prefix | Persistent file storage on OpenAI servers |
 | **Structured output** | `response_format={"type": "json_object"}` | `response_format = list(type = "json_object")` on each run |
 | **Output parsing** | `json.loads()` | `jsonlite::fromJSON()` |
-| **Model** | `gpt-5.1` | `gpt-4.1-mini` |
+| **Model** | configurable via `LLM_MODEL` (default: `gpt-5.1`) | configurable via `LLM_MODEL` (default: `gpt-5.1`) |
 | **Scripts** | 3 modules in `Python/` | 2 scripts in `R/` |
 | **CSV encoding** | UTF-8 | UTF-8 BOM (Excel compatible) |
 | **Feedback columns** | Separate `Q1_feedback` … `Q10_feedback` | Single concatenated `Comments` column |

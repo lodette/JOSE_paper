@@ -1,4 +1,5 @@
 import os
+import re
 from pathlib import Path
 from dotenv import load_dotenv
 
@@ -17,7 +18,18 @@ BASE_LAB_DIR = Path(BASE_LAB_DIR)
 
 INSTRUCTIONS_PATH = BASE_DIR / "grader_instructions.txt"
 
-MODEL   = "gpt-5.1"
+# ── LLM provider config ──────────────────────────────────────────────────────
+# Set LLM_PROVIDER=local in .env to route calls to a local LM Studio / Ollama
+# server instead of the OpenAI API.  All four variables have safe defaults so
+# that existing OpenAI-based workflows require no .env changes.
+LLM_PROVIDER = os.getenv("LLM_PROVIDER", "openai")   # "openai" | "local"
+LLM_BASE_URL = os.getenv("LLM_BASE_URL", None)        # e.g. "http://localhost:1234/v1"
+LLM_API_KEY  = (
+    os.getenv("OPENAI_API_KEY")
+    if LLM_PROVIDER == "openai"
+    else os.getenv("LLM_API_KEY", "lm-studio")
+)
+MODEL   = os.getenv("LLM_MODEL", "gpt-5.1")
 Q_COUNT = 10   # number of graded questions per lab
 
 # Set by configure() before grading begins; None until then.
@@ -42,6 +54,20 @@ def configure(lab_number: int) -> None:
     RUBRIC_PATH   = BASE_LAB_DIR / f"lab_{LAB_NUMBER}_rubric.json"
     STARTER_PATH  = BASE_LAB_DIR / f"lab_{LAB_NUMBER}_starter.qmd"
     SOLUTION_PATH = BASE_LAB_DIR / f"lab_{LAB_NUMBER}_solutions.qmd"
+
+
+def model_slug() -> str:
+    """Return a filename-safe version of the current :data:`MODEL` string.
+
+    Spaces and forward slashes are replaced with underscores; all other
+    characters (including dots and hyphens) are preserved.  For example,
+    ``"gpt-5.1"`` stays ``"gpt-5.1"`` and ``"qwen3.6 27b/q4"`` becomes
+    ``"qwen3.6_27b_q4"``.
+
+    :returns: Sanitised model name suitable for use as a filename suffix.
+    :rtype: str
+    """
+    return re.sub(r"[ /]", "_", MODEL)
 
 
 def load_text(path) -> str:
@@ -106,37 +132,21 @@ def build_cached_context_messages() -> list:
     starter_text  = load_text(STARTER_PATH)
     solution_text = load_text(SOLUTION_PATH)
 
-    context_msgs = [
-        {
-            "role": "user",
-            "cache_control": {"type": "ephemeral"},
-            "content": [
-                {
-                    "type": "text",
-                    "text": f"Rubric JSON for BSMM 8740 lab {LAB_NUMBER}:\n\n" + rubric_text
-                }
-            ]
-        },
-        {
-            "role": "user",
-            "cache_control": {"type": "ephemeral"},
-            "content": [
-                {
-                    "type": "text",
-                    "text": f"Starter .qmd template for lab {LAB_NUMBER}:\n\n" + starter_text
-                }
-            ]
-        },
-        {
-            "role": "user",
-            "cache_control": {"type": "ephemeral"},
-            "content": [
-                {
-                    "type": "text",
-                    "text": f"Solution .qmd for lab {LAB_NUMBER}:\n\n" + solution_text
-                }
-            ]
+    use_cache = LLM_PROVIDER == "openai"
+
+    def make_msg(text: str) -> dict:
+        msg: dict = {
+            "role":    "user",
+            "content": [{"type": "text", "text": text}],
         }
+        if use_cache:
+            msg["cache_control"] = {"type": "ephemeral"}
+        return msg
+
+    context_msgs = [
+        make_msg(f"Rubric JSON for BSMM 8740 lab {LAB_NUMBER}:\n\n" + rubric_text),
+        make_msg(f"Starter .qmd template for lab {LAB_NUMBER}:\n\n" + starter_text),
+        make_msg(f"Solution .qmd for lab {LAB_NUMBER}:\n\n" + solution_text),
     ]
 
     return context_msgs

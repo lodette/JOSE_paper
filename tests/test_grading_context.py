@@ -70,9 +70,29 @@ def test_build_cached_context_messages_all_user_role():
 
 
 def test_build_cached_context_messages_have_ephemeral_cache_control():
-    msgs = build_cached_context_messages()
-    for msg in msgs:
-        assert msg.get("cache_control") == {"type": "ephemeral"}
+    """OpenAI provider path: every context message carries cache_control."""
+    import grading_context as gc
+    original = gc.LLM_PROVIDER
+    try:
+        gc.LLM_PROVIDER = "openai"
+        msgs = build_cached_context_messages()
+        for msg in msgs:
+            assert msg.get("cache_control") == {"type": "ephemeral"}
+    finally:
+        gc.LLM_PROVIDER = original
+
+
+def test_build_cached_context_messages_no_cache_control_for_local():
+    """Local provider path: context messages must NOT carry cache_control."""
+    import grading_context as gc
+    original = gc.LLM_PROVIDER
+    try:
+        gc.LLM_PROVIDER = "local"
+        msgs = build_cached_context_messages()
+        for msg in msgs:
+            assert "cache_control" not in msg
+    finally:
+        gc.LLM_PROVIDER = original
 
 
 def test_build_cached_context_messages_content_is_single_text_block():

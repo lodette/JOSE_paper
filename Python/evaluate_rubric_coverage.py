@@ -20,7 +20,7 @@ Usage:
 
 import argparse
 import json
-import os
+import re
 import sys
 from pathlib import Path
 
@@ -177,11 +177,14 @@ def main(lab_number: int, model: str, output_dir: Path) -> None:
     """
     grading_context.configure(lab_number)
 
-    api_key = os.getenv("OPENAI_API_KEY")
+    api_key = grading_context.LLM_API_KEY
     if not api_key:
         print("Error: OPENAI_API_KEY is not set.", file=sys.stderr)
         sys.exit(1)
-    client = OpenAI(api_key=api_key)
+    client = OpenAI(
+        api_key=api_key,
+        base_url=grading_context.LLM_BASE_URL,   # None → uses OpenAI default
+    )
 
     rubric_path = grading_context.RUBRIC_PATH
     if not rubric_path.exists():
@@ -247,7 +250,8 @@ def main(lab_number: int, model: str, output_dir: Path) -> None:
     raw_df = pd.DataFrame(raw_rows)
 
     output_dir.mkdir(parents=True, exist_ok=True)
-    raw_path = output_dir / f"lab_{lab_number}_rubric_coverage_raw.csv"
+    meta_slug = re.sub(r"[ /]", "_", model)
+    raw_path = output_dir / f"lab_{lab_number}_rubric_coverage_raw_{meta_slug}.csv"
     raw_df.to_csv(raw_path, index=False)
     print(f"\nRaw classifications  →  {raw_path}")
 
@@ -271,7 +275,7 @@ def main(lab_number: int, model: str, output_dir: Path) -> None:
         agg_rows.append(agg)
 
     summary_df = pd.DataFrame(agg_rows)
-    summary_path = output_dir / f"lab_{lab_number}_rubric_coverage_summary.csv"
+    summary_path = output_dir / f"lab_{lab_number}_rubric_coverage_summary_{meta_slug}.csv"
     summary_df.to_csv(summary_path, index=False)
     print(f"Summary              →  {summary_path}\n")
 

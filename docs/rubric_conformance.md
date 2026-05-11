@@ -348,8 +348,8 @@ output verification.
 
 ------------------------------------------------------------------------
 
-*Raw classification data: `assignment/lab_9_rubric_coverage_raw.csv` and
-`assignment/lab_4_rubric_coverage_raw.csv`.*\
-*Aggregated data: `assignment/lab_9_rubric_coverage_summary.csv` and
-`assignment/lab_4_rubric_coverage_summary.csv`.*\
+*Raw classification data: `assignment/lab_9_rubric_coverage_raw_gpt-4o-mini.csv` and
+`assignment/lab_4_rubric_coverage_raw_gpt-4o-mini.csv`.*\
+*Aggregated data: `assignment/lab_9_rubric_coverage_summary_gpt-4o-mini.csv` and
+`assignment/lab_4_rubric_coverage_summary_gpt-4o-mini.csv`.*\
 *Analysis script: `Python/evaluate_rubric_coverage.py`.*

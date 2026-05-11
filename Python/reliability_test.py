@@ -7,8 +7,8 @@ accumulate to 100 rows per student.
 
 Output files are written beside the student submission folders::
 
-    {BASE_DIR}/{folder_name}_grades.csv
-    e.g. "lab-9_student_high_grades.csv"
+    {BASE_DIR}/{folder_name}_grades_{model}.csv
+    e.g. "lab-9_student_high_grades_gpt-5.1.csv"
 
 Columns: ``Run``, ``Total``, ``OverallComment``,
 ``Q1``–``Q{Q_COUNT}``, ``Q1_feedback``–``Q{Q_COUNT}_feedback``.
@@ -146,7 +146,7 @@ def main(n_runs: int = 10, lab_number: int = 9) -> None:
 
     for path in student_paths:
         folder_name = path.parent.name          # e.g. "lab-9_student_high"
-        output_csv  = base_dir / f"{folder_name}_grades.csv"
+        output_csv  = base_dir / f"{folder_name}_grades_{grading_context.model_slug()}.csv"
 
         run_offset  = _get_run_offset(output_csv)
         start, end  = run_offset + 1, run_offset + n_runs

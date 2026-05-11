@@ -47,7 +47,10 @@ def grade_student_qmd(student_qmd_path: Path) -> dict:
     :raises json.JSONDecodeError: If the model returns malformed JSON despite
         the ``json_object`` response format constraint.
     """
-    client = OpenAI()
+    client = OpenAI(
+        api_key=grading_context.LLM_API_KEY,
+        base_url=grading_context.LLM_BASE_URL,   # None → uses OpenAI default
+    )
 
     system_msg    = build_system_message()
     context_msgs  = build_cached_context_messages()

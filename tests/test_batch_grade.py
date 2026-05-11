@@ -54,7 +54,7 @@ def test_main_writes_expected_csv_for_multiple_students(tmp_path, monkeypatch):
 
     batch_grade.main(9)
 
-    output_csv = base_dir / "lab-9" / "lab9_grades.csv"
+    output_csv = base_dir / "lab-9" / f"lab9_grades_{grading_context.model_slug()}.csv"
     assert output_csv.exists()
 
     with output_csv.open(newline="", encoding="utf-8") as f:
@@ -87,7 +87,7 @@ def test_main_records_error_row_when_student_grading_fails(tmp_path, monkeypatch
 
     batch_grade.main(9)
 
-    output_csv = base_dir / "lab-9" / "lab9_grades.csv"
+    output_csv = base_dir / "lab-9" / f"lab9_grades_{grading_context.model_slug()}.csv"
     with output_csv.open(newline="", encoding="utf-8") as f:
         rows = list(csv.DictReader(f))
 

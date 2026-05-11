@@ -16,10 +16,24 @@ if (file.exists(".env")) dotenv::load_dot_env()
 source("./R/utils.R")
 
 # ---- config ----
-LAB_NUMBER  <- 4
-MODEL       <- "gpt-5.1"
-TEMPERATURE <- 0.1
-Q_COUNT     <- 10L
+LAB_NUMBER   <- 4
+TEMPERATURE  <- 0.1
+Q_COUNT      <- 10L
+
+# ── LLM provider config ──────────────────────────────────────────────────────
+# Set LLM_PROVIDER=local in .env to route calls to a local LM Studio / Ollama
+# server instead of the OpenAI API.  All variables have safe defaults so that
+# existing OpenAI-based workflows require no .env changes.
+LLM_PROVIDER <- Sys.getenv("LLM_PROVIDER", unset = "openai")   # "openai" | "local"
+LLM_BASE_URL <- Sys.getenv("LLM_BASE_URL", unset = "https://api.openai.com/v1")
+CHAT_URL     <- paste0(LLM_BASE_URL, "/chat/completions")
+LLM_API_KEY  <- if (LLM_PROVIDER == "openai") {
+  Sys.getenv("OPENAI_API_KEY", unset = NA_character_)
+} else {
+  key <- Sys.getenv("LLM_API_KEY", unset = "")
+  if (!nzchar(key)) "lm-studio" else key
+}
+MODEL <- Sys.getenv("LLM_MODEL", unset = "gpt-5.1")
 
 # ---- paths ----
 RUBRIC_PATH       <- stringr::str_glue("./R assignments/lab_{LAB_NUMBER}_rubric.json")
@@ -28,7 +42,7 @@ SOLUTION_PATH     <- stringr::str_glue("./R assignments/lab_{LAB_NUMBER}_solutio
 INSTRUCTIONS_PATH <- "./Python/grader_instructions.txt"
 
 directory_path <- paste0(getwd(), "/R assignments/lab-", LAB_NUMBER)
-output_csv     <- stringr::str_glue("{directory_path}/r_chat_lab{LAB_NUMBER}_grades.csv")
+output_csv     <- stringr::str_glue("{directory_path}/r_chat_lab{LAB_NUMBER}_grades_{model_slug(MODEL)}.csv")
 
 Q_COLS          <- paste0("Q", seq_len(Q_COUNT))
 Q_FEEDBACK_COLS <- paste0("Q", seq_len(Q_COUNT), "_feedback")
@@ -47,9 +61,11 @@ COL_ORDER       <- c("Student", "Total", "Model_Total", "OverallComment", Q_COLS
 #' @returns An \code{httr2_request} object ready for a JSON body and
 #'   \code{httr2::req_perform()}.
 chat_req <- function() {
-  key <- base::Sys.getenv("OPENAI_API_KEY", unset = NA_character_)
-  if (base::is.na(key) || !base::nzchar(key)) stop("OPENAI_API_KEY is not set.")
-  httr2::request("https://api.openai.com/v1/chat/completions") |>
+  key <- LLM_API_KEY
+  if (LLM_PROVIDER == "openai" && (base::is.na(key) || !base::nzchar(key))) {
+    stop("OPENAI_API_KEY is not set.")
+  }
+  httr2::request(CHAT_URL) |>
     httr2::req_headers(
       "Authorization" = base::paste("Bearer", key),
       "Content-Type"  = "application/json"
@@ -97,31 +113,21 @@ build_context_messages <- function() {
   starter_text  <- readr::read_file(STARTER_PATH)
   solution_text <- readr::read_file(SOLUTION_PATH)
 
-  list(
-    list(
-      role          = "user",
-      cache_control = list(type = "ephemeral"),
-      content       = list(list(
-        type = "text",
-        text = paste0("Rubric JSON for lab ", LAB_NUMBER, ":\n\n", rubric_text)
-      ))
-    ),
-    list(
-      role          = "user",
-      cache_control = list(type = "ephemeral"),
-      content       = list(list(
-        type = "text",
-        text = paste0("Starter .qmd template for lab ", LAB_NUMBER, ":\n\n", starter_text)
-      ))
-    ),
-    list(
-      role          = "user",
-      cache_control = list(type = "ephemeral"),
-      content       = list(list(
-        type = "text",
-        text = paste0("Solution .qmd for lab ", LAB_NUMBER, ":\n\n", solution_text)
-      ))
+  use_cache <- (LLM_PROVIDER == "openai")
+
+  make_msg <- function(text) {
+    msg <- list(
+      role    = "user",
+      content = list(list(type = "text", text = text))
     )
+    if (use_cache) msg$cache_control <- list(type = "ephemeral")
+    msg
+  }
+
+  list(
+    make_msg(paste0("Rubric JSON for lab ", LAB_NUMBER, ":\n\n", rubric_text)),
+    make_msg(paste0("Starter .qmd template for lab ", LAB_NUMBER, ":\n\n", starter_text)),
+    make_msg(paste0("Solution .qmd for lab ", LAB_NUMBER, ":\n\n", solution_text))
   )
 }
 
