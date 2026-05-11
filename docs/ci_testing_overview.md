@@ -113,7 +113,7 @@ BASE_LAB_DIR    → "/tmp/test_lab"
 
 ------------------------------------------------------------------------
 
-### `tests/test_grading_context.py` — 10 tests
+### `tests/test_grading_context.py` — 11 tests
 
 Tests the three public functions in `grading_context.py` without any API interaction.
 
@@ -139,10 +139,11 @@ Tests the three public functions in `grading_context.py` without any API interac
 |----|----|
 | `test_build_cached_context_messages_returns_three_messages` | Exactly three messages are returned (rubric, starter, solution) |
 | `test_build_cached_context_messages_all_user_role` | Every message has `role = "user"` |
-| `test_build_cached_context_messages_have_ephemeral_cache_control` | Every message carries `cache_control = {"type": "ephemeral"}` |
+| `test_build_cached_context_messages_have_ephemeral_cache_control` | When `LLM_PROVIDER="openai"`, every message carries `cache_control = {"type": "ephemeral"}` |
+| `test_build_cached_context_messages_no_cache_control_for_local` | When `LLM_PROVIDER="local"`, no message contains a `cache_control` key |
 | `test_build_cached_context_messages_content_is_single_text_block` | `content` is a one-element list whose sole item has `type = "text"` and non-empty `text` |
 
-The last four tests exercise the real `assignment/` fixture files that live in the repository, giving them light integration coverage at no extra cost.
+The last five tests exercise the real `assignment/` fixture files that live in the repository, giving them light integration coverage at no extra cost.
 
 ------------------------------------------------------------------------
 

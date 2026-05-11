@@ -32,7 +32,7 @@ attributable to the API choice rather than the programming language.
 | **Structured output** | `response_format={"type": "json_object"}` | `response_format = list(type = "json_object")` | `response_format = list(type = "json_object")` on run object |
 | **Output parsing** | `json.loads()` | `jsonlite::fromJSON()` | `jsonlite::fromJSON()` |
 | **Temperature** | `0.1` | `0.1` | `0.1` |
-| **Model** | `gpt-5.1` | `gpt-5.1` | `gpt-5.1` |
+| **Model** | configurable via `LLM_MODEL` (default: `gpt-5.1`) | configurable via `LLM_MODEL` (default: `gpt-5.1`) | configurable via `LLM_MODEL` (default: `gpt-5.1`) |
 | **CSV encoding** | UTF-8 | UTF-8 | UTF-8 BOM (Excel compatible) |
 | **Feedback columns** | Per-question (`Q1_feedback`, …) | Per-question (`Q1_feedback`, …) | Concatenated in a single `Comments` column |
 
@@ -52,8 +52,12 @@ is present and matches the current model. The cost is operational
 complexity: the two-script workflow and asynchronous polling require
 more infrastructure than the Chat Completions pipelines.
 
-All three pipelines use the same model (`gpt-5.1`), temperature (`0.1`),
-and API-enforced JSON output (`response_format = json_object`). The
-variables under study are therefore the API surface (Assistants v2 vs
-Chat Completions) and context delivery mechanism (file retrieval vs
-inline prompt).
+All three pipelines default to the same model (`gpt-5.1`), temperature
+(`0.1`), and API-enforced JSON output (`response_format = json_object`).
+The model is configurable via the `LLM_MODEL` environment variable; the
+Python and R Chat Completions pipelines also support local inference via
+`LLM_PROVIDER=local` (see `docs/privacy_and_ethics.md` Section 5). The
+R Assistants v2 pipeline requires an OpenAI API and is not portable to
+local providers. The variables under study are therefore the API surface
+(Assistants v2 vs Chat Completions) and context delivery mechanism (file
+retrieval vs inline prompt).
