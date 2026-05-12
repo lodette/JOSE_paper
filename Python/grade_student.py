@@ -1,4 +1,5 @@
 import json
+import re
 from pathlib import Path
 from openai import OpenAI
 
@@ -75,12 +76,16 @@ def grade_student_qmd(student_qmd_path: Path) -> dict:
 
     messages = [system_msg] + context_msgs + [student_msg]
 
-    response = client.chat.completions.create(
-        model=MODEL,
-        messages=messages,
-        response_format={"type": "json_object"},
-        temperature=0.1,
-    )
+    kwargs: dict = {"model": MODEL, "messages": messages, "temperature": 0.1}
+    if grading_context.LLM_PROVIDER == "openai":
+        kwargs["response_format"] = {"type": "json_object"}
 
-    raw = response.choices[0].message.content
+    response = client.chat.completions.create(**kwargs)
+
+    raw = response.choices[0].message.content or ""
+    raw = raw.strip()
+    # Strip markdown JSON code fences that some models emit (e.g. ```json ... ```)
+    raw = re.sub(r"^```(?:json)?\s*\n?", "", raw)
+    raw = re.sub(r"\n?```\s*$",          "", raw)
+    raw = raw.strip()
     return json.loads(raw)

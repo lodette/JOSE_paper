@@ -16,7 +16,7 @@ if (file.exists(".env")) dotenv::load_dot_env()
 source("./R/utils.R")
 
 # ---- config ----
-LAB_NUMBER   <- 4
+if (!exists("LAB_NUMBER")) LAB_NUMBER <- 4
 TEMPERATURE  <- 0.1
 Q_COUNT      <- 10L
 
@@ -88,10 +88,12 @@ chat_req <- function() {
 #' @seealso \code{\link{build_context_messages}}, \code{\link{grade_student}}
 build_system_message <- function() {
   if (!fs::file_exists(INSTRUCTIONS_PATH)) stop("Missing file: ", INSTRUCTIONS_PATH)
-  list(
-    role    = "system",
-    content = readr::read_file(INSTRUCTIONS_PATH)
-  )
+  content <- readr::read_file(INSTRUCTIONS_PATH)
+  # Qwen3 (and compatible models) run in thinking mode by default when served
+  # locally.  Appending /no_think disables the reasoning chain so that the
+  # response is returned directly in `content` rather than `reasoning_content`.
+  if (LLM_PROVIDER == "local") content <- paste0(content, "\n\n/no_think")
+  list(role = "system", content = content)
 }
 
 #' Build the three shared context messages with ephemeral prompt caching
@@ -179,20 +181,29 @@ grade_student <- function(student_qmd_path) {
   )
 
   body <- list(
-    model           = MODEL,
-    messages        = messages,
-    response_format = list(type = "json_object"),
-    temperature     = TEMPERATURE
+    model      = MODEL,
+    messages   = messages,
+    temperature = TEMPERATURE,
+    max_tokens  = 2048L
   )
+  if (LLM_PROVIDER == "openai") {
+    body$response_format <- list(type = "json_object")
+  }
 
   resp <- chat_req() |>
     httr2::req_body_json(body, auto_unbox = TRUE) |>
     httr2::req_perform()
   httr2::resp_check_status(resp)
 
-  result <- httr2::resp_body_json(resp, simplifyVector = FALSE)
-  jsonlite::fromJSON(result$choices[[1]]$message$content,
-                     simplifyVector = FALSE)
+  result  <- httr2::resp_body_json(resp, simplifyVector = FALSE)
+  raw     <- result$choices[[1]]$message$content
+  if (is.null(raw)) raw <- ""
+  raw     <- trimws(raw)
+  # Strip markdown JSON code fences that some models emit (e.g. ```json ... ```)
+  raw     <- gsub("^```(?:json)?\\s*\\n?", "", raw, perl = TRUE)
+  raw     <- gsub("\\n?```\\s*$",          "", raw, perl = TRUE)
+  raw     <- trimws(raw)
+  jsonlite::fromJSON(raw, simplifyVector = FALSE)
 }
 
 # ---- main ----
@@ -293,10 +304,10 @@ main <- function() {
   }
 }
 
-# run
-if (identical(environment(), globalenv())) {
+# run — only auto-execute when called as a script (Rscript), not on source()
+if (!interactive()) {
   tryCatch(main(), error = function(e) {
     message("Error: ", conditionMessage(e))
-    if (!interactive()) quit(save = "no", status = 1)
+    quit(save = "no", status = 1)
   })
 }

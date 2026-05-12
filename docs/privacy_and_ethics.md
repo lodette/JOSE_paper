@@ -104,16 +104,16 @@ True de-identification of free-text is a genuinely difficult problem, and re-ide
 
 ## 5. Local Inference as a Privacy-Preserving Alternative
 
-The privacy concerns described above arise because student data is transmitted to a third-party API. Deployers for whom this is unacceptable — whether for legal, institutional, or policy reasons — can eliminate the third-party transfer entirely by running the LLM locally. Tools such as LM Studio, Ollama, and vLLM expose an OpenAI-compatible API endpoint. Switching the Python and R Chat Completions pipelines to a local server requires no code changes — set four variables in `.env` and the pipelines route all calls to the local server:
+The privacy concerns described above arise because student data is transmitted to a third-party API. Deployers for whom this is unacceptable — whether for legal, institutional, or policy reasons — can eliminate the third-party transfer entirely by running the LLM locally. Tools such as LM Studio, Ollama, and vLLM expose an OpenAI-compatible API endpoint. Switching the Python and R Chat Completions pipelines to a local server requires only configuration changes — set four variables in `.env` and the pipelines route all calls to the local server:
 
 ```ini
 LLM_PROVIDER=local
 LLM_BASE_URL=http://localhost:1234/v1   # LM Studio default; adjust for Ollama
-LLM_MODEL=qwen3.6-27b-q4_k_m  # exact name from /v1/models
+LLM_MODEL=qwen/qwen3.6-27b             # exact API id from /v1/models
 LLM_API_KEY=lm-studio                   # any non-empty string; not validated locally
 ```
 
-Leave these variables commented out (the default) to continue using the OpenAI API. When `LLM_PROVIDER=local` is set, ephemeral prompt caching is automatically disabled, since local runtimes do not support OpenAI's `cache_control` extension. The R Assistants v2 pipeline is not suitable for local adaptation, as it relies on OpenAI-specific features (file upload, assistant and thread management) that have no local equivalent.
+Leave these variables commented out (the default) to continue using the OpenAI API. When `LLM_PROVIDER=local` is set, the pipelines automatically adapt: ephemeral prompt caching is disabled (not supported by local runtimes), `response_format=json_object` is omitted (not universally supported), `/no_think` is appended to the system message for Qwen3 models to suppress chain-of-thought output, and markdown code fences are stripped from responses if present. The R Assistants v2 pipeline is not suitable for local adaptation, as it relies on OpenAI-specific features (file upload, assistant and thread management) that have no local equivalent.
 
 Instructors considering local deployment should note that the reliability and rubric conformance results reported in this paper were produced with `gpt-5.1` via the OpenAI API. Smaller open-weight models capable of running on local hardware may be less reliable at producing well-formed structured output and rubric-grounded feedback; their performance on grading tasks has not been evaluated in this study. Local deployment is therefore a privacy-preserving option to explore rather than a validated drop-in replacement.
 

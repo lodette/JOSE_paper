@@ -85,11 +85,23 @@ OPENAI_API_KEY=sk-...       # Your OpenAI API key
 # Optional — uncomment to route calls to a local LM Studio / Ollama server instead:
 # LLM_PROVIDER=local
 # LLM_BASE_URL=http://localhost:1234/v1
-# LLM_MODEL=qwen3-27b-instruct-q4_k_m
+# LLM_MODEL=qwen/qwen3.6-27b   # exact API id from /v1/models
 # LLM_API_KEY=lm-studio
 ```
 
 This file is read automatically by both pipelines at startup and must not be committed to version control. When the four `LLM_*` variables are commented out (the default), both pipelines use the OpenAI API with `gpt-5.1`.
+
+When using LM Studio, the following server settings are required before starting the server:
+
+| Setting | Required value |
+|---------|---------------|
+| **API** | OpenAI-compatible (not "LM Studio API") |
+| **Enable Thinking** | Off |
+| **Context length** | 32768 |
+| **Structured output** | Off |
+| **Limit Response Length** | Off |
+
+When `LLM_PROVIDER=local` is set, both pipelines automatically adapt: ephemeral prompt caching is disabled, `response_format=json_object` is omitted, `/no_think` is appended to the system message (for Qwen3 models), and markdown code fences are stripped from responses if present.
 
 ### R
 
