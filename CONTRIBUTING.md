@@ -131,7 +131,7 @@ BASE_LAB_DIR=/path/to/lab/folder # Parent folder containing lab-<N>/
 # Optional — uncomment to use a local LM Studio / Ollama server:
 # LLM_PROVIDER=local
 # LLM_BASE_URL=http://localhost:1234/v1
-# LLM_MODEL=qwen3.6-27b-q4_k_m
+# LLM_MODEL=qwen/qwen3.6-27b
 # LLM_API_KEY=lm-studio
 ```
 

@@ -100,6 +100,11 @@ def build_system_message() -> dict:
     :raises FileNotFoundError: If :data:`INSTRUCTIONS_PATH` does not exist.
     """
     instructions_text = load_text(INSTRUCTIONS_PATH)
+    # Qwen3 (and compatible models) run in thinking mode by default when served
+    # locally.  Appending /no_think disables the reasoning chain so that the
+    # response is returned directly in `content` rather than `reasoning_content`.
+    if LLM_PROVIDER == "local":
+        instructions_text += "\n\n/no_think"
     return {
         "role": "system",
         "content": instructions_text

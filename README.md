@@ -118,7 +118,7 @@ pip install openai python-dotenv
     # Optional — uncomment to use a local LM Studio / Ollama server instead:
     # LLM_PROVIDER=local
     # LLM_BASE_URL=http://localhost:1234/v1
-    # LLM_MODEL=qwen3.6-27b-q4_k_m
+    # LLM_MODEL=qwen/qwen3.6-27b
     # LLM_API_KEY=lm-studio
     ```
 
@@ -241,7 +241,17 @@ Both the Python and R Chat Completions pipelines can route calls to a locally ru
 1.  Download [LM Studio](https://lmstudio.ai) and install it.
 2.  In the **Discover** tab, search for and download **`qwen3.6-27b-q4_k_m`** — this is the currently recommended model for this workload on an Apple Silicon machine with 64 GB RAM.
 3.  Load the model (click the model name → **Load**).
-4.  Open the **Developer** tab and start the local server. The default address is `http://localhost:1234/v1`. Confirm the server is running before proceeding.
+4.  Open the **Developer** tab. Before starting the server, apply these settings for the loaded model:
+
+| Setting | Required value |
+|---------|---------------|
+| **API** | OpenAI-compatible (not "LM Studio API") |
+| **Enable Thinking** | Off |
+| **Context length** | 32768 |
+| **Structured output** | Off |
+| **Limit Response Length** | Off |
+
+5.  Start the local server. The default address is `http://localhost:1234/v1`. Confirm the server is running before proceeding.
 
 ### 2. Configure the Python pipeline
 
@@ -250,7 +260,7 @@ Uncomment and fill in the four `LLM_*` lines in your `.env`:
 ``` ini
 LLM_PROVIDER=local
 LLM_BASE_URL=http://localhost:1234/v1
-LLM_MODEL=qwen3.6-27b-q4_k_m
+LLM_MODEL=qwen/qwen3.6-27b
 LLM_API_KEY=lm-studio
 ```
 
@@ -267,7 +277,7 @@ Uncomment the three `Sys.setenv()` lines near the top of `chat_grading_runner.R`
 ``` r
 Sys.setenv(LLM_PROVIDER = "local")
 Sys.setenv(LLM_BASE_URL = "http://localhost:1234/v1")
-Sys.setenv(LLM_MODEL    = "qwen3.6-27b-q4_k_m")
+Sys.setenv(LLM_MODEL    = "qwen/qwen3.6-27b")
 ```
 
 Then run as normal:
@@ -279,9 +289,11 @@ main()
 
 ### Notes
 
--   The model name must match exactly what LM Studio reports — check the **Developer** tab or query `http://localhost:1234/v1/models`.
+-   The model name passed as `LLM_MODEL` must match the API identifier that LM Studio reports, which may differ from the download name. Verify with `curl http://localhost:1234/v1/models` or the equivalent `httr2` call in R.
 -   Ephemeral prompt caching is an OpenAI-specific feature and is disabled automatically when `LLM_PROVIDER=local`.
--   Output files include the model name as a suffix (e.g. `lab4_grades_qwen3.6-27b-q4_k_m.csv`), so local and OpenAI results coexist without overwriting each other.
+-   `response_format=json_object` is omitted for local providers; the grader instructions instruct the model to return valid JSON instead. Markdown code fences (` ```json ``` `) are stripped automatically if the model emits them.
+-   For Qwen3 models, `/no_think` is appended to the system message automatically when `LLM_PROVIDER=local` to suppress chain-of-thought output, which would otherwise leave the `content` field empty.
+-   Output files include the model name as a suffix (e.g. `lab4_grades_qwen_qwen3.6-27b.csv`), so local and OpenAI results coexist without overwriting each other.
 -   Local model grading quality has not been formally evaluated in this study.
 
 ------------------------------------------------------------------------
