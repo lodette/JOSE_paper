@@ -8,18 +8,27 @@ sub-criteria (CodeExecution, ProcessFidelity, OutputAccuracy) are referenced
 in each per-question feedback string.
 
 Produces two CSVs in the output directory:
-  lab_{N}_rubric_coverage_raw.csv     — one row per (student, run, question)
-  lab_{N}_rubric_coverage_summary.csv — aggregated mention/deduction rates
-                                        per student × question
+  lab_{N}_rubric_coverage_raw_{grading_model}_meta_{meta_model}.csv
+      — one row per (grading_model, student, run, question)
+  lab_{N}_rubric_coverage_summary_{grading_model}_meta_{meta_model}.csv
+      — aggregated mention/deduction rates per grading_model × student × question
+
+When --grading-model is omitted all per-student CSVs in the lab folder are
+processed together and "all" is used in place of the grading model in output
+filenames.  The grading_model column in both CSVs always identifies which
+grading model produced each row.
 
 Usage:
-    python Python/evaluate_rubric_coverage.py --lab-number 9
+    python Python/evaluate_rubric_coverage.py -n 9
+    python Python/evaluate_rubric_coverage.py -n 9 --grading-model gpt-5.1
+    python Python/evaluate_rubric_coverage.py -n 9 --grading-model qwen_qwen3.6-27b
     python Python/evaluate_rubric_coverage.py -n 9 --model gpt-4o-mini
     python Python/evaluate_rubric_coverage.py -n 9 --output-dir /tmp/results
 """
 
 import argparse
 import json
+import os
 import re
 import sys
 from pathlib import Path
@@ -115,19 +124,44 @@ def active_questions(rubric_path: Path) -> list[str]:
 def extract_student_label(csv_path: Path) -> str:
     """Derive a short human-readable label from a per-student CSV filename.
 
-    Examples::
+    Handles both plain and model-slug filename formats::
 
-        lab-9_student_low_grades.csv  →  student_low
-        lab-4_student_b_grades.csv    →  student_b
+        lab-9_student_low_grades.csv                    →  student_low
+        lab-9_student_mid_grades_qwen_qwen3.6-27b.csv   →  student_mid
+        lab-4_student_b_grades.csv                      →  student_b
 
     :param csv_path: Path to the per-student grade CSV.
     :type csv_path: Path
-    :returns: Label string starting at the ``student_`` token.
+    :returns: Label string starting at the ``student_`` token, ending before
+              the ``_grades`` suffix.
     :rtype: str
     """
-    stem = csv_path.stem.removesuffix("_grades")  # e.g. 'lab-9_student_low'
+    stem = csv_path.stem  # e.g. 'lab-9_student_mid_grades_qwen_qwen3.6-27b'
+    m = re.search(r"(student_.+?)_grades", stem)
+    if m:
+        return m.group(1)
+    # fallback for unexpected format
     idx = stem.find("student_")
     return stem[idx:] if idx >= 0 else stem
+
+
+def extract_grading_model(csv_path: Path) -> str:
+    """Extract the grading-model slug from a per-student CSV filename.
+
+    The slug is the portion of the stem that follows ``_grades_``::
+
+        lab-9_student_mid_grades_gpt-5.1.csv            →  gpt-5.1
+        lab-9_student_mid_grades_qwen_qwen3.6-27b.csv   →  qwen_qwen3.6-27b
+
+    Returns ``"unknown"`` when no model suffix is present (old-format files).
+
+    :param csv_path: Path to the per-student grade CSV.
+    :type csv_path: Path
+    :returns: Model slug string.
+    :rtype: str
+    """
+    m = re.search(r"_grades_(.+)$", csv_path.stem)
+    return m.group(1) if m else "unknown"
 
 
 def classify_feedback(client: OpenAI, feedback: str, model: str) -> dict | None:
@@ -161,12 +195,16 @@ def classify_feedback(client: OpenAI, feedback: str, model: str) -> dict | None:
 
 # ── main ──────────────────────────────────────────────────────────────────────
 
-def main(lab_number: int, model: str, output_dir: Path) -> None:
+def main(lab_number: int, model: str, output_dir: Path,
+         grading_model: str | None = None, yes: bool = False) -> None:
     """Run Phase 1 rubric coverage analysis for *lab_number*.
 
-    Iterates over all per-student reliability CSVs found in
-    ``BASE_LAB_DIR/lab-{lab_number}/``, classifies each feedback string via
-    the meta-evaluation LLM call, and writes two summary CSVs.
+    Iterates over per-student reliability CSVs found in
+    ``BASE_LAB_DIR/lab-{lab_number}/``.  When *grading_model* is supplied
+    only CSVs whose filename slug matches are processed; otherwise all
+    matching CSVs are processed together.  Each row in the output CSVs
+    carries a ``grading_model`` column identifying which grading model
+    produced the feedback.
 
     :param lab_number: Lab number to analyse (e.g. ``9``).
     :type lab_number: int
@@ -174,17 +212,24 @@ def main(lab_number: int, model: str, output_dir: Path) -> None:
     :type model: str
     :param output_dir: Directory in which to write output CSVs.
     :type output_dir: Path
+    :param grading_model: If set, restrict input to CSVs whose model slug
+        matches this string exactly.  ``None`` processes all CSVs.
+    :type grading_model: str or None
+    :param yes: When ``True``, skip the interactive confirmation prompt.
+    :type yes: bool
     """
     grading_context.configure(lab_number)
 
-    api_key = grading_context.LLM_API_KEY
+    # Meta-evaluation always uses OpenAI directly (response_format=json_object
+    # is required and is not supported by local providers without structured
+    # output enabled).  Read OPENAI_API_KEY explicitly so that a local-provider
+    # environment (LLM_PROVIDER=local) does not redirect these calls to LM Studio.
+    api_key = os.environ.get("OPENAI_API_KEY", "")
     if not api_key:
-        print("Error: OPENAI_API_KEY is not set.", file=sys.stderr)
+        print("Error: OPENAI_API_KEY is not set (required for meta-evaluation).",
+              file=sys.stderr)
         sys.exit(1)
-    client = OpenAI(
-        api_key=api_key,
-        base_url=grading_context.LLM_BASE_URL,   # None → uses OpenAI default
-    )
+    client = OpenAI(api_key=api_key)   # always routes to api.openai.com
 
     rubric_path = grading_context.RUBRIC_PATH
     if not rubric_path.exists():
@@ -194,23 +239,48 @@ def main(lab_number: int, model: str, output_dir: Path) -> None:
     questions = active_questions(rubric_path)
 
     base_dir = grading_context.BASE_LAB_DIR / f"lab-{lab_number}"
-    student_csvs = sorted(base_dir.glob("*student*grades.csv"))
+    all_csvs = sorted(base_dir.glob("*student*grades*.csv"))
+    if grading_model:
+        student_csvs = [p for p in all_csvs
+                        if extract_grading_model(p) == grading_model]
+    else:
+        student_csvs = all_csvs
     if not student_csvs:
-        print(f"Error: no per-student grade CSVs found in {base_dir}", file=sys.stderr)
+        msg = (f"Error: no per-student grade CSVs"
+               f"{f' for grading model {grading_model!r}' if grading_model else ''}"
+               f" found in {base_dir}")
+        print(msg, file=sys.stderr)
         sys.exit(1)
+
+    found_models = sorted({extract_grading_model(p) for p in student_csvs})
 
     # Count rows up front so we can show a realistic API-call estimate
     dfs = {p: pd.read_csv(p) for p in student_csvs}
     est_calls = sum(len(df) * len(questions) for df in dfs.values())
 
-    print(f"Lab {lab_number}  |  {len(student_csvs)} student file(s)  "
-          f"|  {questions}  |  model: {model}")
-    print(f"Estimated API calls (upper bound): {est_calls}\n")
+    print(f"Reading grades from : {base_dir}  (BASE_LAB_DIR/lab-{lab_number} — set in .env)")
+    print(f"Grading model(s)    : {', '.join(found_models)}")
+    print(f"Student file(s)     : {len(student_csvs)}")
+    print(f"Questions           : {', '.join(questions)}")
+    print(f"Meta-eval model     : {model}")
+    print(f"Estimated API calls : {est_calls} (upper bound)")
+    print(f"Output directory    : {output_dir}")
+
+    if not yes:
+        print("\nProceed?")
+        print("  1. Yes")
+        print("  2. No")
+        choice = input("> ").strip()
+        if choice not in ("1", "y", "Y", "yes", "Yes"):
+            print("Aborted.")
+            sys.exit(0)
+    print()
 
     raw_rows: list[dict] = []
 
     for csv_path, df in dfs.items():
-        student_label = extract_student_label(csv_path)
+        student_label       = extract_student_label(csv_path)
+        grading_model_label = extract_grading_model(csv_path)
 
         for _, row in tqdm(df.iterrows(), total=len(df), desc=student_label):
             run_id = row.get("Run", row.get("Student", "?"))
@@ -231,10 +301,11 @@ def main(lab_number: int, model: str, output_dir: Path) -> None:
                     continue
 
                 rec: dict = {
-                    "student":  student_label,
-                    "run":      run_id,
-                    "question": q,
-                    "score":    score,
+                    "grading_model": grading_model_label,
+                    "student":       student_label,
+                    "run":           run_id,
+                    "question":      q,
+                    "score":         score,
                 }
                 for criterion in CRITERIA:
                     entry = result.get(criterion, {})
@@ -250,20 +321,25 @@ def main(lab_number: int, model: str, output_dir: Path) -> None:
     raw_df = pd.DataFrame(raw_rows)
 
     output_dir.mkdir(parents=True, exist_ok=True)
-    meta_slug = re.sub(r"[ /]", "_", model)
-    raw_path = output_dir / f"lab_{lab_number}_rubric_coverage_raw_{meta_slug}.csv"
+    meta_slug    = re.sub(r"[ /]", "_", model)
+    grading_slug = grading_model if grading_model else "all"
+    raw_path = output_dir / (
+        f"lab_{lab_number}_rubric_coverage_raw_{grading_slug}_meta_{meta_slug}.csv"
+    )
     raw_df.to_csv(raw_path, index=False)
     print(f"\nRaw classifications  →  {raw_path}")
 
-    # ── aggregate: mean rates per student × question ───────────────────────
+    # ── aggregate: mean rates per grading_model × student × question ───────
     agg_rows: list[dict] = []
-    for (student, question), grp in raw_df.groupby(["student", "question"]):
+    for (gm, student, question), grp in raw_df.groupby(
+            ["grading_model", "student", "question"]):
         agg: dict = {
-            "student":    student,
-            "question":   question,
-            "n_runs":     len(grp),
-            "mean_score": round(grp["score"].mean(), 3),
-            "score_sd":   round(grp["score"].std(),  3),
+            "grading_model": gm,
+            "student":       student,
+            "question":      question,
+            "n_runs":        len(grp),
+            "mean_score":    round(grp["score"].mean(), 3),
+            "score_sd":      round(grp["score"].std(),  3),
         }
         for criterion in CRITERIA:
             agg[f"{criterion}_mention_pct"]   = round(
@@ -275,38 +351,44 @@ def main(lab_number: int, model: str, output_dir: Path) -> None:
         agg_rows.append(agg)
 
     summary_df = pd.DataFrame(agg_rows)
-    summary_path = output_dir / f"lab_{lab_number}_rubric_coverage_summary_{meta_slug}.csv"
+    summary_path = output_dir / (
+        f"lab_{lab_number}_rubric_coverage_summary_{grading_slug}_meta_{meta_slug}.csv"
+    )
     summary_df.to_csv(summary_path, index=False)
     print(f"Summary              →  {summary_path}\n")
 
-    # ── print human-readable table ─────────────────────────────────────────
-    sep = "─" * 94
+    # ── print human-readable table (one section per grading model) ───────────
+    sep  = "─" * 94
     hdr1 = (f"{'Student':<18} {'Q':<4} {'Score':>6} {'SD':>5}  "
             f"{'CE':>5} {'PF':>5} {'OA':>5}   "
             f"{'CE-':>5} {'PF-':>5} {'OA-':>5}")
     hdr2 = (f"{'':18} {'':4} {'mean':>6} {'':>5}  "
             f"{'ment%':>5} {'ment%':>5} {'ment%':>5}   "
             f"{'ded%':>5} {'ded%':>5} {'ded%':>5}")
-    print(sep)
-    print(hdr1)
-    print(hdr2)
-    print(sep)
-    prev_student = None
-    for _, r in summary_df.iterrows():
-        if prev_student and r["student"] != prev_student:
-            print()  # blank line between students
-        prev_student = r["student"]
-        print(
-            f"{r['student']:<18} {r['question']:<4} "
-            f"{r['mean_score']:>6.2f} {r['score_sd']:>5.2f}  "
-            f"{r['CodeExecution_mention_pct']:>5.0f} "
-            f"{r['ProcessFidelity_mention_pct']:>5.0f} "
-            f"{r['OutputAccuracy_mention_pct']:>5.0f}   "
-            f"{r['CodeExecution_deduction_pct']:>5.0f} "
-            f"{r['ProcessFidelity_deduction_pct']:>5.0f} "
-            f"{r['OutputAccuracy_deduction_pct']:>5.0f}"
-        )
-    print(sep)
+
+    for gm, gm_df in summary_df.groupby("grading_model"):
+        print(f"\nGrading model: {gm}")
+        print(sep)
+        print(hdr1)
+        print(hdr2)
+        print(sep)
+        prev_student = None
+        for _, r in gm_df.iterrows():
+            if prev_student and r["student"] != prev_student:
+                print()  # blank line between students
+            prev_student = r["student"]
+            print(
+                f"{r['student']:<18} {r['question']:<4} "
+                f"{r['mean_score']:>6.2f} {r['score_sd']:>5.2f}  "
+                f"{r['CodeExecution_mention_pct']:>5.0f} "
+                f"{r['ProcessFidelity_mention_pct']:>5.0f} "
+                f"{r['OutputAccuracy_mention_pct']:>5.0f}   "
+                f"{r['CodeExecution_deduction_pct']:>5.0f} "
+                f"{r['ProcessFidelity_deduction_pct']:>5.0f} "
+                f"{r['OutputAccuracy_deduction_pct']:>5.0f}"
+            )
+        print(sep)
+
     print("CE = CodeExecution  |  PF = ProcessFidelity  |  OA = OutputAccuracy")
     print("ment% = % of runs mentioning criterion  |  ded% = % of runs deducting for it")
 
@@ -331,6 +413,21 @@ if __name__ == "__main__":
         type=str, default=str(DEFAULT_OUTPUT_DIR),
         help="Directory for output CSVs",
     )
+    parser.add_argument(
+        "--grading-model",
+        type=str, default=None,
+        help=(
+            "Model slug to filter input CSVs (e.g. gpt-5.1 or "
+            "qwen_qwen3.6-27b).  Must match the suffix in the filename "
+            "exactly.  Omit to process all per-student CSVs together."
+        ),
+    )
+    parser.add_argument(
+        "--yes", "-y",
+        action="store_true",
+        help="Skip the interactive confirmation prompt (for scripted use).",
+    )
     args = parser.parse_args()
 
-    main(args.lab_number, args.model, Path(args.output_dir))
+    main(args.lab_number, args.model, Path(args.output_dir),
+         args.grading_model, args.yes)
