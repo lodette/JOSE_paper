@@ -22,7 +22,7 @@ penalising students without tying deductions to specific criteria.
 Each lab has per-exercise rubric checks on three sub-criteria:
 
 | Sub-criterion | Lab 9 weight | Lab 4 weight | What it tests |
-|------------------|------------------|------------------|------------------|
+|----|----|----|----|
 | **CodeExecution** (CE) | 1 pt | 1 pt | Code runs and uses the required functions/operators |
 | **ProcessFidelity** (PF) | 2 pt | 1 pt | Correct workflow steps followed as specified |
 | **OutputAccuracy** (OA) | 2 pt | 1 pt | Numerical results or output match expected values |
@@ -62,7 +62,7 @@ Questions Q7–Q10 do not exist in Lab 9 and are excluded.
 ### Detailed Results
 
 | Student      | Q   | Score |   SD | CE ment% | PF ment% | OA ment% | CE ded% | PF ded% | OA ded% |
-|--------|--------|-------:|-------:|-------:|-------:|-------:|-------:|-------:|-------:|
+|--------------|-----|------:|-----:|---------:|---------:|---------:|--------:|--------:|--------:|
 | student_high | Q1  |  5.00 | 0.00 |      100 |   **58** |      100 |       0 |       0 |       0 |
 | student_high | Q2  |  5.00 | 0.00 |      100 |      100 |      100 |       0 |       0 |       0 |
 | student_high | Q3  |  5.00 | 0.00 |   **44** |   **64** |      100 |       0 |       0 |       0 |
@@ -143,7 +143,7 @@ target (test/train MSE ratio), making OA verifiable by inspection.*
 ### Detailed Results by Student
 
 | Student   | Q   | Score |   SD | CE ment% | PF ment% | OA ment% | CE ded% | PF ded% | OA ded% |
-|--------|--------|-------:|-------:|-------:|-------:|-------:|-------:|-------:|-------:|
+|-----------|-----|------:|-----:|---------:|---------:|---------:|--------:|--------:|--------:|
 | student_a | Q1  |  1.36 | 0.49 |      100 |      100 |       38 |      86 |     100 |       6 |
 | student_a | Q2  |  1.88 | 0.33 |      100 |      100 |       16 |      36 |     100 |      16 |
 | student_a | Q3  |  1.00 | 0.00 |       96 |      100 |       40 |      84 |      94 |      38 |
@@ -280,7 +280,7 @@ failure.
 ## Cross-Lab Comparison
 
 |   | Lab 9 | Lab 4 |
-|------------------------|------------------------|------------------------|
+|----|----|----|
 | CE coverage (full-credit questions) | Consistently verified (≥96%) | Consistently verified (≥70%) |
 | PF coverage (full-credit questions) | **Under-verified** (12–100%) | Well-verified (56–100%) |
 | OA coverage (full-credit questions) | Well-verified (96–100%) | **Under-verified** (0–32% for Q2–Q9) |
@@ -348,8 +348,10 @@ output verification.
 
 ------------------------------------------------------------------------
 
-*Raw classification data: `assignment/lab_9_rubric_coverage_raw_gpt-4o-mini.csv` and
+*Raw classification data:
+`assignment/lab_9_rubric_coverage_raw_gpt-4o-mini.csv` and
 `assignment/lab_4_rubric_coverage_raw_gpt-4o-mini.csv`.*\
-*Aggregated data: `assignment/lab_9_rubric_coverage_summary_gpt-4o-mini.csv` and
+*Aggregated data:
+`assignment/lab_9_rubric_coverage_summary_gpt-4o-mini.csv` and
 `assignment/lab_4_rubric_coverage_summary_gpt-4o-mini.csv`.*\
 *Analysis script: `Python/evaluate_rubric_coverage.py`.*
