@@ -114,7 +114,7 @@ def active_questions(rubric_path: Path) -> list[str]:
     :rtype: list[str]
     """
     with open(rubric_path, encoding="utf-8") as fh:
-        rubric = json.load(fh)
+        rubric = json.loads(fh.read(), strict=False)
     return sorted(
         [f"Q{key[2:]}" for key in rubric if key.startswith("Ex")],
         key=lambda q: int(q[1:]),

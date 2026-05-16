@@ -1,6 +1,6 @@
 ---
 title: "Rubric Conformance Analysis"
-date: 2026-04-30
+date: 2026-05-15
 editor_options: 
   markdown: 
     wrap: 72
@@ -118,10 +118,14 @@ consistently.
 
 ## Lab 4
 
-**10 students · 10 questions · 3 pts each (CE 1 pt, PF 1 pt, OA 1 pt) ·
-50 runs**
+**10 students · 10 questions · 3 pts each (CE 1 pt, PF 1 pt, OA 1 pt)**
 
-### Summary by Question (averaged across all students)
+Results are reported separately for gpt-5.1 (50 runs) and
+qwen/qwen3.6-27b (50 runs).
+
+### gpt-5.1 Results
+
+#### Summary by Question (averaged across all students)
 
 | Q   | Avg score | CE ment% | PF ment% | OA ment% | CE ded% | PF ded% |  OA ded% |
 |-----|----------:|---------:|---------:|---------:|--------:|--------:|---------:|
@@ -140,7 +144,7 @@ consistently.
 OutputAccuracy. Q10 is the exception — it has a specific numerical
 target (test/train MSE ratio), making OA verifiable by inspection.*
 
-### Detailed Results by Student
+#### Detailed Results by Student
 
 | Student   | Q   | Score |   SD | CE ment% | PF ment% | OA ment% | CE ded% | PF ded% | OA ded% |
 |-----------|-----|------:|-----:|---------:|---------:|---------:|--------:|--------:|--------:|
@@ -245,63 +249,206 @@ target (test/train MSE ratio), making OA verifiable by inspection.*
 | student_j | Q9  |  3.00 | 0.00 |       98 |       96 |       68 |       0 |       0 |       0 |
 | student_j | Q10 |  2.94 | 0.24 |       88 |       98 |       92 |       0 |       0 |      84 |
 
+### qwen/qwen3.6-27b Results
+
+#### Summary by Question (averaged across all students)
+
+| Q   | Avg score | CE ment% | PF ment% | OA ment% | CE ded% | PF ded% | OA ded% |
+|-----|----------:|---------:|---------:|---------:|--------:|--------:|--------:|
+| Q1  |       2.1 |     99.0 |  **37.0** |     69.8 |    48.4 |    36.8 |     26.4 |
+| Q2  |       2.1 |     98.6 |  **57.4** | **45.6** |    26.6 |    34.2 |     60.4 |
+| Q3  |       2.0 |     92.4 |     97.6 | **17.6** |    36.4 |    54.6 |     17.2 |
+| Q4  |       3.0 |     98.8 |  **42.0** |  **1.8** |     0.2 |     0.0 |      0.0 |
+| Q5  |       3.0 |     99.0 |  **18.8** | **27.4** |     0.2 |     0.0 |      0.2 |
+| Q6  |       2.8 |     98.2 |     66.2 | **16.0** |     1.8 |    19.2 |      2.8 |
+| Q7  |       2.3 |  **72.6** |     96.1 | **17.4** |    31.8 |    36.9 |     12.6 |
+| Q8  |       2.1 |     87.2 |     77.8 | **13.0** |    18.0 |    45.6 |      5.6 |
+| Q9  |       2.4 |     96.6 |  **51.9** | **36.8** |    10.2 |    31.3 |     15.8 |
+| Q10 |       1.6 |  **78.4** |     95.0 |     61.8 |    45.8 |    72.0 |     42.4 |
+
+*Bold PF ment% values highlight the new under-verification pattern (below
+60%) compared to gpt-5.1. Bold OA ment% and CE ment% values mark the
+same systematic under-mention found in gpt-5.1.*
+
+#### Detailed Results by Student
+
+| Student   | Q   | Score |   SD | CE ment% | PF ment% | OA ment% | CE ded% | PF ded% | OA ded% |
+|-----------|-----|------:|-----:|---------:|---------:|---------:|--------:|--------:|--------:|
+| student_a | Q1  |  1.98 | 0.14 |      100 |      100 |       94 |       0 |     100 |      64 |
+| student_a | Q2  |  2.00 | 0.00 |      100 |       48 |      100 |       0 |      48 |     100 |
+| student_a | Q3  |  1.00 | 0.00 |      100 |      100 |       96 |       0 |     100 |      96 |
+| student_a | Q4  |  3.00 | 0.00 |      100 |       98 |       12 |       0 |       0 |       0 |
+| student_a | Q5  |  3.00 | 0.00 |      100 |       24 |       32 |       0 |       0 |       0 |
+| student_a | Q6  |  3.00 | 0.00 |      100 |       56 |       16 |       0 |       0 |       0 |
+| student_a | Q7  |  2.92 | 0.27 |       96 |      100 |       32 |       0 |       4 |      20 |
+| student_a | Q8  |  2.96 | 0.20 |      100 |       96 |       16 |       0 |       4 |       4 |
+| student_a | Q9  |  2.98 | 0.14 |      100 |       42 |       22 |       0 |       0 |       2 |
+| student_a | Q10 |  2.44 | 0.54 |       86 |       96 |       92 |       6 |      36 |      44 |
+| student_b | Q1  |  2.00 | 0.00 |      100 |       50 |       22 |     100 |      50 |       0 |
+| student_b | Q2  |  2.00 | 0.00 |      100 |       34 |       40 |      60 |      12 |      40 |
+| student_b | Q3  |  2.92 | 0.27 |      100 |      100 |        4 |       8 |       8 |       4 |
+| student_b | Q4  |  3.00 | 0.00 |      100 |        2 |        0 |       0 |       0 |       0 |
+| student_b | Q5  |  3.00 | 0.00 |      100 |        2 |        0 |       0 |       0 |       0 |
+| student_b | Q6  |  2.00 | 0.00 |       96 |      100 |       24 |      14 |      96 |      24 |
+| student_b | Q7  |  1.80 | 0.40 |       90 |       98 |       20 |      78 |      74 |      20 |
+| student_b | Q8  |  1.00 | 0.00 |       86 |      100 |        2 |      40 |     100 |       2 |
+| student_b | Q9  |  1.22 | 0.42 |       98 |       94 |       16 |      58 |      94 |      16 |
+| student_b | Q10 |  0.98 | 0.14 |       92 |      100 |       54 |      88 |     100 |      54 |
+| student_c | Q1  |  2.00 | 0.00 |      100 |        4 |      100 |       6 |       4 |     100 |
+| student_c | Q2  |  3.00 | 0.00 |      100 |      100 |        0 |       0 |       0 |       0 |
+| student_c | Q3  |  2.32 | 0.47 |       80 |      100 |       16 |      44 |      60 |      12 |
+| student_c | Q4  |  3.00 | 0.00 |      100 |       24 |        0 |       0 |       0 |       0 |
+| student_c | Q5  |  3.00 | 0.00 |      100 |        2 |       16 |       0 |       0 |       0 |
+| student_c | Q6  |  3.00 | 0.00 |      100 |       96 |        0 |       0 |       0 |       0 |
+| student_c | Q7  |  2.00 | 0.00 |       64 |      100 |       28 |      46 |     100 |      28 |
+| student_c | Q8  |  2.04 | 0.20 |       86 |      100 |       10 |      12 |      96 |       6 |
+| student_c | Q9  |  2.24 | 0.43 |       98 |       94 |       20 |       8 |      74 |      14 |
+| student_c | Q10 |  1.12 | 0.33 |       52 |      100 |       50 |      30 |     100 |      46 |
+| student_d | Q1  |  1.98 | 0.14 |      100 |        0 |      100 |       2 |       0 |     100 |
+| student_d | Q2  |  2.00 | 0.00 |       98 |      100 |       14 |       2 |      98 |      90 |
+| student_d | Q3  |  1.24 | 0.43 |       80 |       94 |       26 |      72 |      92 |      26 |
+| student_d | Q4  |  2.98 | 0.14 |      100 |       70 |        2 |       2 |       0 |       0 |
+| student_d | Q5  |  3.00 | 0.00 |      100 |       58 |       54 |       2 |       0 |       0 |
+| student_d | Q6  |  2.98 | 0.14 |      100 |       62 |       54 |       2 |       0 |       0 |
+| student_d | Q7  |  0.00 | 0.00 |      100 |       81 |        4 |     100 |      81 |       4 |
+| student_d | Q8  |  0.00 | 0.00 |      100 |       62 |        6 |     100 |      62 |       6 |
+| student_d | Q9  |  1.14 | 0.79 |      100 |       51 |       76 |      14 |      49 |      76 |
+| student_d | Q10 |  0.00 | 0.00 |       98 |       70 |        0 |     100 |      70 |       0 |
+| student_e | Q1  |  2.00 | 0.00 |      100 |       32 |       92 |      96 |      32 |       0 |
+| student_e | Q2  |  2.00 | 0.00 |      100 |       52 |       42 |      56 |      28 |      42 |
+| student_e | Q3  |  1.00 | 0.00 |       88 |      100 |        8 |      66 |      94 |       8 |
+| student_e | Q4  |  3.00 | 0.00 |      100 |       98 |        0 |       0 |       0 |       0 |
+| student_e | Q5  |  3.00 | 0.00 |      100 |       26 |       82 |       0 |       0 |       2 |
+| student_e | Q6  |  3.00 | 0.00 |      100 |       90 |       38 |       0 |       0 |       0 |
+| student_e | Q7  |  3.00 | 0.00 |       78 |       98 |       20 |       0 |       0 |       0 |
+| student_e | Q8  |  3.00 | 0.00 |       94 |       98 |       32 |       0 |       2 |      14 |
+| student_e | Q9  |  3.00 | 0.00 |      100 |       32 |       90 |       0 |       0 |      34 |
+| student_e | Q10 |  1.18 | 0.39 |       92 |       94 |       90 |      60 |      84 |      90 |
+| student_f | Q1  |  2.00 | 0.00 |      100 |       46 |       72 |      94 |      44 |       0 |
+| student_f | Q2  |  2.00 | 0.00 |      100 |       58 |       16 |      80 |      56 |      16 |
+| student_f | Q3  |  1.16 | 0.37 |       96 |       96 |       10 |      80 |      94 |      10 |
+| student_f | Q4  |  3.00 | 0.00 |       98 |       48 |        4 |       0 |       0 |       0 |
+| student_f | Q5  |  3.00 | 0.00 |      100 |       22 |       28 |       0 |       0 |       0 |
+| student_f | Q6  |  3.00 | 0.00 |      100 |       40 |       12 |       0 |       0 |       0 |
+| student_f | Q7  |  2.98 | 0.14 |       78 |       98 |       10 |       2 |       4 |       0 |
+| student_f | Q8  |  3.00 | 0.00 |       98 |       78 |       10 |       0 |       0 |       0 |
+| student_f | Q9  |  3.00 | 0.00 |      100 |       76 |       82 |       0 |       0 |       0 |
+| student_f | Q10 |  2.00 | 0.00 |       80 |      100 |       34 |      56 |      92 |      10 |
+| student_g | Q1  |  2.00 | 0.00 |       92 |        0 |       28 |      92 |       0 |       0 |
+| student_g | Q2  |  2.00 | 0.00 |       92 |       48 |       52 |      40 |       4 |      52 |
+| student_g | Q3  |  3.00 | 0.00 |       82 |       92 |        0 |       0 |       0 |       0 |
+| student_g | Q4  |  3.00 | 0.00 |       92 |       12 |        0 |       0 |       0 |       0 |
+| student_g | Q5  |  3.00 | 0.00 |       92 |        2 |        2 |       0 |       0 |       0 |
+| student_g | Q6  |  3.00 | 0.00 |       92 |       88 |        2 |       0 |       0 |       0 |
+| student_g | Q7  |  2.65 | 0.48 |       86 |       92 |        8 |      54 |      18 |       8 |
+| student_g | Q8  |  1.65 | 0.48 |       64 |       92 |       22 |       0 |      92 |       0 |
+| student_g | Q9  |  3.00 | 0.00 |       92 |       10 |        2 |       0 |       0 |       0 |
+| student_g | Q10 |  2.02 | 0.15 |       62 |       92 |       52 |      42 |      68 |      38 |
+| student_h | Q1  |  2.00 | 0.00 |      100 |       84 |       14 |      18 |      84 |       0 |
+| student_h | Q2  |  2.00 | 0.00 |       98 |       94 |       20 |       4 |      82 |      92 |
+| student_h | Q3  |  2.94 | 0.24 |      100 |      100 |        0 |       6 |       6 |       0 |
+| student_h | Q4  |  3.00 | 0.00 |      100 |        2 |        0 |       0 |       0 |       0 |
+| student_h | Q5  |  3.00 | 0.00 |      100 |       36 |       48 |       0 |       0 |       0 |
+| student_h | Q6  |  2.02 | 0.14 |       96 |       96 |        4 |       2 |      96 |       4 |
+| student_h | Q7  |  1.80 | 0.40 |       54 |       98 |       44 |      38 |      88 |      46 |
+| student_h | Q8  |  1.00 | 0.00 |       46 |      100 |       24 |      28 |     100 |      24 |
+| student_h | Q9  |  1.36 | 0.48 |       80 |       96 |       18 |      22 |      96 |      16 |
+| student_h | Q10 |  0.98 | 0.14 |       72 |      100 |       52 |      56 |     100 |      48 |
+| student_i | Q1  |  2.00 | 0.00 |       98 |       54 |       76 |      76 |      54 |       0 |
+| student_i | Q2  |  2.00 | 0.00 |       98 |       36 |       72 |      24 |      12 |      72 |
+| student_i | Q3  |  1.00 | 0.00 |       98 |       94 |       16 |      88 |      92 |      16 |
+| student_i | Q4  |  3.00 | 0.00 |       98 |       40 |        0 |       0 |       0 |       0 |
+| student_i | Q5  |  3.00 | 0.00 |       98 |       16 |       12 |       0 |       0 |       0 |
+| student_i | Q6  |  3.00 | 0.00 |       98 |       34 |       10 |       0 |       0 |       0 |
+| student_i | Q7  |  3.00 | 0.00 |       36 |       96 |        8 |       0 |       0 |       0 |
+| student_i | Q8  |  3.00 | 0.00 |       98 |       50 |        8 |       0 |       0 |       0 |
+| student_i | Q9  |  3.00 | 0.00 |       98 |       20 |       10 |       0 |       0 |       0 |
+| student_i | Q10 |  2.00 | 0.00 |       50 |       98 |       94 |      20 |      70 |      94 |
+| student_j | Q1  |  3.00 | 0.00 |      100 |        0 |      100 |       0 |       0 |       0 |
+| student_j | Q2  |  2.00 | 0.00 |      100 |        4 |      100 |       0 |       2 |     100 |
+| student_j | Q3  |  3.00 | 0.00 |      100 |      100 |        0 |       0 |       0 |       0 |
+| student_j | Q4  |  3.00 | 0.00 |      100 |       26 |        0 |       0 |       0 |       0 |
+| student_j | Q5  |  3.00 | 0.00 |      100 |        0 |        0 |       0 |       0 |       0 |
+| student_j | Q6  |  3.00 | 0.00 |      100 |        0 |        0 |       0 |       0 |       0 |
+| student_j | Q7  |  3.00 | 0.00 |       44 |      100 |        0 |       0 |       0 |       0 |
+| student_j | Q8  |  3.00 | 0.00 |      100 |        2 |        0 |       0 |       0 |       0 |
+| student_j | Q9  |  3.00 | 0.00 |      100 |        4 |       32 |       0 |       0 |       0 |
+| student_j | Q10 |  3.00 | 0.00 |      100 |      100 |      100 |       0 |       0 |       0 |
+
+------------------------------------------------------------------------
+
 ### Key Findings — Lab 4
 
+#### Findings consistent across both models
+
 **1. OutputAccuracy is systematically under-verified for Q2–Q9.** OA
-mention% averages 0–32% across these questions, despite OA being worth
-one third of the points. This is strikingly different from Lab 9, where
-OA was mentioned in 96–100% of runs. The difference reflects the nature
-of the outputs: Lab 9 exercises produce specific numerical answers
-(e.g., \~75% probability, \~23% stationary share) that are easy to
-verify by inspection. Lab 4 exercises produce R model objects, workflow
-sets, and resampling objects, whose correctness cannot readily be
-confirmed from a text description of the output.
+mention% averages 0–32% (gpt-5.1) and 2–37% (qwen) across these
+questions, despite OA being worth one third of the points. The pattern
+is structurally identical across both models. The difference from Lab 9
+reflects the nature of the outputs: Lab 9 exercises produce specific
+numerical answers that are easy to verify by inspection, while Lab 4
+exercises produce R model objects and workflow sets whose correctness
+cannot readily be confirmed from a text description.
 
-**2. Q10 is the exception.** Q10 asks for final model extraction and
-comparison of test/train MSE ratios — a specific numerical target. OA
-mention% reaches 74.6% on average (and OA deduction% 66.2%), confirming
-that the grader can and does check OutputAccuracy when the expected
-output is a concrete number.
+**2. Q10 is the exception for both models.** Q10 asks for final model
+extraction and comparison of test/train MSE ratios — a specific
+numerical target. OA mention% reaches 74.6% (gpt-5.1) and 61.8%
+(qwen), confirming that both models check OutputAccuracy when the
+expected output is a concrete number.
 
-**3. ProcessFidelity is the dominant criterion in Lab 4.** PF is
-mentioned in 74–100% of runs across all questions, and PF deductions are
-well-calibrated: high when process steps are clearly missed (e.g.,
-student_d Q7 and Q8, both scored 0), near-zero when the full score is
-awarded.
+**3. Deduction attribution is well-calibrated for both models.** When
+either grader penalises a student, the identified criterion corresponds
+to the known deficiency: student_d Q7 and Q8 (both scored 0) attract
+near-100% CE and PF deductions from both models.
 
-**4. CodeExecution is also well-verified but slightly over-flagged.** CE
-mention% is 86–100% across questions and CE deductions generally track
-with code failures, though some partial-credit cases show CE deductions
-that appear to reflect wrong-function usage rather than true execution
-failure.
+#### New finding: ProcessFidelity under-verification with qwen
+
+**4. qwen substantially under-verifies ProcessFidelity in Lab 4.** With
+gpt-5.1, PF is mentioned in 74–100% of runs across all questions — the
+dominant and well-verified criterion. With qwen, PF mention% drops to
+19–66% on six of ten questions (Q1, Q2, Q4, Q5, Q6, Q9), with Q5
+falling to just 19%. This mirrors the PF under-verification finding from
+Lab 9 (where qwen PF mention% on full-credit runs averaged 39% vs 65%
+for gpt-5.1) and suggests qwen systematically skips process verification
+more than gpt-5.1 across both lab types.
+
+**5. CodeExecution coverage is similar but qwen drops on Q7 and Q10.**
+gpt-5.1 CE mention% is 86–100% across questions. qwen CE mention% is
+comparable for most questions but falls to 72.6% on Q7 and 78.4% on
+Q10, suggesting slightly weaker code-execution checking on the more
+complex later exercises.
 
 ------------------------------------------------------------------------
 
 ## Cross-Lab Comparison
 
-|   | Lab 9 | Lab 4 |
-|----|----|----|
-| CE coverage (full-credit questions) | Consistently verified (≥96%) | Consistently verified (≥70%) |
-| PF coverage (full-credit questions) | **Under-verified** (12–100%) | Well-verified (56–100%) |
-| OA coverage (full-credit questions) | Well-verified (96–100%) | **Under-verified** (0–32% for Q2–Q9) |
-| Primary driver of deductions | PF and OA (when outputs are wrong) | PF (dominant), CE secondary |
-| OA verifiability | High — numeric answers | Low — R objects; only Q10 (MSE) is numeric |
+|   | Lab 9 (gpt-5.1) | Lab 4 (gpt-5.1) | Lab 4 (qwen) |
+|----|----|----|----|
+| CE coverage | Consistently verified (≥96%) | Consistently verified (≥86%) | Mostly verified; drops to 73% on Q7 |
+| PF coverage | **Under-verified** (12–100%) | Well-verified (74–100%) | **Under-verified** (19–97%) |
+| OA coverage | Well-verified (96–100%) | **Under-verified** (0–32% for Q2–Q9) | **Under-verified** (2–37% for Q2–Q9) |
+| Primary driver of deductions | PF and OA (when outputs wrong) | PF (dominant), CE secondary | PF (dominant), CE secondary |
+| OA verifiability | High — numeric answers | Low — R objects; only Q10 (MSE) numeric | Low — R objects; only Q10 (MSE) numeric |
 
 The dominant pattern differs by lab type:
 
 -   **Lab 9** (mathematical derivations and matrix operations): the
     grader infers correct process from correct output — awarding PF
     credit when numerical answers match without consistently verifying
-    that the specified steps were followed.
--   **Lab 4** (tidymodels ML pipeline): the grader verifies that the
-    right functions were called in the right sequence (CE and PF), but
-    largely skips output verification because the expected outputs are
-    complex R objects rather than scalar numbers.
+    that the specified steps were followed. This PF gap is larger for
+    qwen (~39% mention on full-credit runs) than for gpt-5.1 (~65%).
+-   **Lab 4** (tidymodels ML pipeline): both models verify that the
+    right functions were called in the right sequence (CE and PF for
+    gpt-5.1; CE for qwen), but largely skip output verification because
+    the expected outputs are complex R objects. qwen additionally
+    under-verifies PF on most Lab 4 questions, a gap absent from
+    gpt-5.1.
 
-In both cases the bias is in the same direction: the criterion that
+In all cases the bias is in the same direction: the criterion that
 requires *independent* verification of a non-obvious property is the one
-that gets skipped. In Lab 9 that is process verification; in Lab 4 it is
-output verification.
+that gets skipped. For gpt-5.1, that is PF in Lab 9 and OA in Lab 4.
+For qwen, both PF (across both labs) and OA (in Lab 4) are
+under-verified.
 
 ------------------------------------------------------------------------
 
@@ -326,6 +473,40 @@ output verification.
     reliability runs — it represents a structural property of how the
     grader applies the rubric.
 
+### Comparison with Human Grading
+
+The two behaviours most prominent in these results — inferring process
+credit from correct output, and skipping output verification when the
+expected result is not a concrete scalar — are not unique to LLM
+graders. A human TA reading the same `.qmd` source file faces identical
+epistemic constraints: they cannot execute the code, cannot inspect R
+objects, and will reasonably award process credit when a student's
+numerical answer is correct, without tracing every intermediate step.
+The criterion-coverage patterns documented here are therefore better
+understood as a property of the grading task than as a flaw specific to
+the LLM.
+
+The run-to-run score variability is similarly worth contextualising. The
+analysis here measures *intra-rater* reliability — the same grader, the
+same submission, repeated independently. The more practically relevant
+comparison is *inter-rater* reliability: what variation would arise if
+two different human TAs graded the same assignment independently?
+Inter-rater disagreement on individual questions is a well-documented
+phenomenon in educational assessment, and the magnitudes reported here
+(SD typically below 0.3 pts on a 3–5 pt scale, with isolated cases
+reaching 0.5) are plausibly consistent with the range observed in human
+grading studies. What distinguishes the LLM is not that variability
+exists, but that it can be measured systematically and cheaply through
+repeated runs — a diagnostic capability that is rarely applied to human
+graders in practice.
+
+The more substantive concern is not variability but the *structural*
+nature of the criterion-coverage gaps. Because the pattern is consistent
+across runs and models, it will not average out with more repetitions.
+This makes it a property of how the rubric criteria interact with the
+grading task rather than random noise, and it applies equally — if less
+visibly — to human graders working under the same constraints.
+
 ------------------------------------------------------------------------
 
 ## Limitations
@@ -348,10 +529,16 @@ output verification.
 
 ------------------------------------------------------------------------
 
-*Raw classification data:
-`assignment/lab_9_rubric_coverage_raw_gpt-4o-mini.csv` and
-`assignment/lab_4_rubric_coverage_raw_gpt-4o-mini.csv`.*\
-*Aggregated data:
-`assignment/lab_9_rubric_coverage_summary_gpt-4o-mini.csv` and
-`assignment/lab_4_rubric_coverage_summary_gpt-4o-mini.csv`.*\
+*Raw classification data:*\
+*`assignment/lab_9_rubric_coverage_raw_gpt-5.1_meta_gpt-4o-mini.csv`*\
+*`assignment/lab_9_rubric_coverage_raw_qwen_qwen3.6-27b_meta_gpt-4o-mini.csv`*\
+*`assignment/lab_4_rubric_coverage_raw_gpt-5.1_meta_gpt-4o-mini.csv`*\
+*`assignment/lab_4_rubric_coverage_raw_qwen_qwen3.6-27b_meta_gpt-4o-mini.csv`*
+
+*Aggregated data:*\
+*`assignment/lab_9_rubric_coverage_summary_gpt-5.1_meta_gpt-4o-mini.csv`*\
+*`assignment/lab_9_rubric_coverage_summary_qwen_qwen3.6-27b_meta_gpt-4o-mini.csv`*\
+*`assignment/lab_4_rubric_coverage_summary_gpt-5.1_meta_gpt-4o-mini.csv`*\
+*`assignment/lab_4_rubric_coverage_summary_qwen_qwen3.6-27b_meta_gpt-4o-mini.csv`*
+
 *Analysis script: `Python/evaluate_rubric_coverage.py`.*
