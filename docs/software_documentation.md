@@ -13,10 +13,11 @@
 5.  [Preparing Grading Materials](#5-preparing-grading-materials)
 6.  [Running the R Pipelines](#6-running-the-r-pipelines)
 7.  [Running the Python Pipeline](#7-running-the-python-pipeline)
-8.  [Output Format](#8-output-format)
-9.  [Pipeline Comparison](#9-pipeline-comparison)
-10. [Running Tests](#10-running-tests)
-11. [Reliability Testing](#11-reliability-testing)
+8.  [Running the Claude Pipeline](#8-running-the-claude-pipeline)
+9.  [Output Format](#9-output-format)
+10. [Pipeline Comparison](#10-pipeline-comparison)
+11. [Running Tests](#11-running-tests)
+12. [Reliability Testing](#12-reliability-testing)
 
 ------------------------------------------------------------------------
 
@@ -24,12 +25,13 @@
 
 This system automates the grading of student lab assignments using a large language model (LLM). Given a rubric, an instructor solution, and a set of student submissions in Quarto (`.qmd`) format, the grader returns a numeric grade and written feedback for each question in each assignment, written to a CSV file.
 
-Two independent pipelines are provided that produce equivalent outputs from the same input materials:
+Three independent pipelines are provided that produce equivalent outputs from the same input materials:
 
--   **R pipeline** — uses the OpenAI Assistants v2 API. Grading materials are uploaded to OpenAI once and retrieved by the model at inference time via semantic search (`file_search`). Execution is asynchronous, with a polling loop monitoring each run to completion.
--   **Python pipeline** — uses the OpenAI Chat Completions API. Grading materials are inlined in every request, with prompt caching used to amortise the cost of the shared context across the batch. Execution is synchronous.
+-   **Python pipeline** — uses the OpenAI Chat Completions API. Grading materials are inlined in every request, with ephemeral prompt caching used to amortise the cost of the shared context across the batch. Execution is synchronous.
+-   **Claude pipeline** — uses the Anthropic Messages API. Grading materials are inlined in every request with ephemeral prompt caching. Structured output is enforced via forced tool use rather than `response_format`. Execution is synchronous.
+-   **R pipeline** — two variants. The primary variant (**Chat Completions**) mirrors the Python approach and is stateless. The advanced variant (**Assistants v2**) uploads grading materials to OpenAI once and retrieves them at inference time via `file_search`; execution is asynchronous with a polling loop.
 
-Both pipelines accept assignments containing any mix of programming questions, open-ended statistical reasoning questions, and closed-form numerical questions.
+All pipelines accept assignments containing any mix of programming questions, open-ended statistical reasoning questions, and closed-form numerical questions.
 
 ------------------------------------------------------------------------
 
@@ -52,6 +54,12 @@ Both pipelines accept assignments containing any mix of programming questions, o
 │   ├── summarize_criterion_coverage.py  # Direct criterion coverage summary (Intervention B+)
 │   └── grader_instructions.txt          # System prompt passed to the LLM
 │
+├── Claude/
+│   ├── grading_context.py               # Config, Anthropic system blocks, tool schema
+│   ├── grade_student.py                 # Grade a single student submission via Messages API
+│   ├── batch_grade.py                   # Entry point: walk folders, grade all, write CSV
+│   └── grader_instructions.txt          # System prompt for the Anthropic pipeline
+│
 ├── assignment/
 │   ├── lab_9_rubric.json                # Grading rubric (per-exercise criteria and points)
 │   ├── lab_9_starter.qmd                # Assignment template distributed to students
@@ -66,8 +74,8 @@ Both pipelines accept assignments containing any mix of programming questions, o
 │   ├── test_grading_context.py
 │   └── test_grade_student.py
 │
-├── .env                                 # API key (not committed)
-├── requirements.txt                     # Python and R package lists
+├── .env                                 # API keys (not committed)
+├── requirements.txt                     # Python package list
 ├── pyproject.toml                       # Python project metadata
 └── CLAUDE.md                            # Project notes for Claude Code
 ```
@@ -76,23 +84,27 @@ Both pipelines accept assignments containing any mix of programming questions, o
 
 ## 3. Prerequisites
 
-### API key
+### API keys
 
-Both pipelines require either an **OpenAI API key** or a **locally running LM Studio / Ollama server**. Create a file named `.env` at the project root:
+The Python and R pipelines require an **OpenAI API key**. The Claude
+pipeline requires an **Anthropic API key**. Create a file named `.env`
+at the project root:
 
 ```ini
-OPENAI_API_KEY=sk-...       # Your OpenAI API key
+OPENAI_API_KEY=sk-...        # required for Python and R pipelines
+ANTHROPIC_API_KEY=sk-ant-... # required for Claude pipeline
+BASE_LAB_DIR=/path/to/student/submissions
 
-# Optional — uncomment to route calls to a local LM Studio / Ollama server instead:
+# Optional — uncomment to route Python/R calls to a local LM Studio / Ollama server:
 # LLM_PROVIDER=local
 # LLM_BASE_URL=http://localhost:1234/v1
 # LLM_MODEL=qwen/qwen3.6-27b   # exact API id from /v1/models
 # LLM_API_KEY=lm-studio
 ```
 
-This file is read automatically by both pipelines at startup and must not be committed to version control. When the four `LLM_*` variables are commented out (the default), both pipelines use the OpenAI API with `gpt-5.1`.
+This file is read automatically by all pipelines at startup and must not be committed to version control. The Claude pipeline does not support local inference providers.
 
-When using LM Studio, the following server settings are required before starting the server:
+When using LM Studio (Python and R only), the following server settings are required before starting the server:
 
 | Setting | Required value |
 |---------|---------------|
@@ -102,7 +114,7 @@ When using LM Studio, the following server settings are required before starting
 | **Structured output** | Off |
 | **Limit Response Length** | Off |
 
-When `LLM_PROVIDER=local` is set, both pipelines automatically adapt: ephemeral prompt caching is disabled, `response_format=json_object` is omitted, `/no_think` is appended to the system message (for Qwen3 models), and markdown code fences are stripped from responses if present.
+When `LLM_PROVIDER=local` is set, the Python and R Chat Completions pipelines automatically adapt: ephemeral prompt caching is disabled, `response_format=json_object` is omitted, `/no_think` is appended to the system message (for Qwen3 models), and markdown code fences are stripped from responses if present.
 
 ### R
 
@@ -124,7 +136,7 @@ The `oaii` package (used for file uploads in the setup script) must be installed
 remotes::install_github("cezarykuran/oaii")
 ```
 
-### Python
+### Python / Claude
 
 -   Python ≥ 3.11
 
@@ -163,7 +175,7 @@ Install Python dependencies (see §3 above). R packages are loaded via `libraria
 
 ## 5. Preparing Grading Materials
 
-All grading materials live in the `assignment/` directory. Three files are required before either pipeline can run.
+All grading materials live in the `assignment/` directory. Three files are required before any pipeline can run.
 
 ### 5.1 Assignment files
 
@@ -173,7 +185,7 @@ All grading materials live in the `assignment/` directory. Three files are requi
 | `lab_{N}_solutions.qmd` | The instructor solution                   |
 | `lab_{N}_rubric.json`   | Per-exercise grading criteria             |
 
-Replace `{N}` with the lab number (e.g. `9`). The lab number is read from the `LAB_NUMBER` environment variable at runtime.
+Replace `{N}` with the lab number (e.g. `9`). The lab number is passed as a command-line argument to the Python and Claude pipelines and set at the top of the R scripts.
 
 ### 5.2 Rubric format
 
@@ -198,16 +210,19 @@ The rubric is a JSON file with a `GlobalScoring` block and one entry per exercis
       "ProcessFidelity (2 pt)": "Defines 4x4 transition matrix P, computes P^6, multiplies initial state vector c(1,0,0,0) with P6 then with indicator vector c(1,1,1,0)",
       "OutputAccuracy (2 pt)": "Result is approximately 0.75 or 75%"
     },
-    "DiscretionaryPenalty (up to -1 pt)": "Code does not execute to completion."
+    "DiscretionaryPenalty (up to -1 pt)": "Code does not execute to completion.",
+    "OA_proxy": ""
   }
 }
 ```
 
 The rubric exercises (`Ex1`, `Ex2`, …) map to question columns (`Q1`, `Q2`, …) in the output CSV.
 
-### 5.3 Grader instructions (Python pipeline)
+### 5.3 Grader instructions
 
-`Python/grader_instructions.txt` contains the system prompt given to the LLM. It instructs the model to grade based on the `.qmd` source only (not assumed execution output), to assess each sub-criterion independently before assigning a grade, and to return a single JSON object in the following schema:
+`Python/grader_instructions.txt` is the system prompt used by both the **Python** and **R Chat Completions** pipelines. `Claude/grader_instructions.txt` is the system prompt used by the **Claude** pipeline; the two files are nearly identical, differing only in how structured output is requested (JSON object vs `submit_grade` tool call). Both instruct the model to grade based on the `.qmd` source only (not assumed execution output), to assess each sub-criterion independently before assigning a grade, and to produce `met`/`evidence` blocks for each of `CodeExecution`, `ProcessFidelity`, and `OutputAccuracy`. When the rubric exercise includes a non-empty `OA_proxy` field, the grader uses it as the primary basis for the OutputAccuracy assessment.
+
+The expected JSON output structure is:
 
 ``` json
 {
@@ -218,23 +233,14 @@ The rubric exercises (`Ex1`, `Ex2`, …) map to question columns (`Q1`, `Q2`, �
       "OutputAccuracy":  { "met": true,  "evidence": "Code structure produces a result ≈ 0.75 as expected." },
       "grade": 4.5,
       "feedback": "Transition matrix correct; P^6 computed correctly; output matches expected value."
-    },
-    "Q2": {
-      "CodeExecution":   { "met": true,  "evidence": "eigen() called on transposed P." },
-      "ProcessFidelity": { "met": false, "evidence": "sum(pi) verification step absent." },
-      "OutputAccuracy":  { "met": true,  "evidence": "Stationary distribution values correct." },
-      "grade": 3.0,
-      "feedback": "Stationary distribution solved but sum(pi) verification missing."
     }
   },
-  "total": 7.5,
-  "overall_comment": "Strong understanding of Markov chains. Minor gaps in verification steps."
+  "total": 4.5,
+  "overall_comment": "Strong understanding of Markov chains."
 }
 ```
 
-When the rubric exercise includes a non-empty `OA_proxy` field, the grader uses it as the primary basis for the OutputAccuracy assessment, verifying the described property directly in the student's source and citing it in `OutputAccuracy.evidence`.
-
-Edit this file to update the grading instructions without changing any code.
+Edit the relevant `grader_instructions.txt` to adjust grading behaviour without changing any code.
 
 ### 5.4 Student submission layout
 
@@ -306,10 +312,6 @@ This performs four steps:
 Set the path to the student submissions directory and run:
 
 ``` r
-# In your .env or before sourcing:
-# CONFIG_JSON  <- "./assignment/assistant_config.json"
-# directory_path <- paste0(getwd(), "/lab-9")
-
 source("R/oaii_grading_assistant_runner.R")
 main()
 ```
@@ -357,24 +359,16 @@ Results are written to `R_assignments/r_chat_lab{N}_grades_{model}.csv` (UTF-8, 
 
 ## 7. Running the Python Pipeline
 
-The Python pipeline requires no setup phase. It reads all configuration from environment variables and the shared `assignment/` files.
+The Python pipeline requires no setup phase. It reads configuration from the `.env` file and the shared `assignment/` files.
 
-### 7.1 Set environment variables
-
-Add the following to your `.env`:
-
-```         
-LAB_NUMBER=9
-BASE_LAB_DIR=/path/to/student/submissions
-```
-
-`BASE_LAB_DIR` should be the parent of the `lab-{N}/` folder — the pipeline appends `lab-{N}/` automatically.
-
-### 7.2 Run
+### 7.1 Run
 
 ``` bash
-python Python/batch_grade.py
+python Python/batch_grade.py --lab-number 9
+python Python/batch_grade.py -n 4            # short form
 ```
+
+`BASE_LAB_DIR` must be set in `.env`.
 
 For each student submission file the pipeline:
 
@@ -388,7 +382,7 @@ For each student submission file the pipeline:
 
 Results are written to `{BASE_LAB_DIR}/lab-{N}/lab{N}_grades_{model}.csv` (UTF-8).
 
-### 7.3 Grading a single student (programmatic use)
+### 7.2 Grading a single student (programmatic use)
 
 ``` python
 from pathlib import Path
@@ -404,9 +398,6 @@ for q, info in result["questions"].items():
     print(f"  OA met: {info['OutputAccuracy']['met']}  ({info['OutputAccuracy']['evidence']})")
 # → Q1: 5.0  —  Transition matrix correct; %^% operator used; output ≈ 0.75.
 # →   OA met: True  (Code structure produces a result ≈ 0.75 as expected.)
-# → Q2: 4.0  —  Stationary distribution correct; sum(pi) check missing.
-# →   OA met: True  (Stationary distribution values correct.)
-# ...
 
 print(result["overall_comment"])
 # → Strong submission overall. Minor gaps in verification steps for Ex2 and Ex4.
@@ -414,11 +405,66 @@ print(result["overall_comment"])
 
 ------------------------------------------------------------------------
 
-## 8. Output Format
+## 8. Running the Claude Pipeline
 
-Both pipelines produce a CSV file with one row per student.
+The Claude pipeline requires no setup phase. It mirrors the Python pipeline in structure but uses the Anthropic Messages API and enforces structured output via forced tool use rather than `response_format`.
 
-### 8.1 R output — `assignment/r_lab{N}_grades_{model}.csv`
+### 8.1 Configuration
+
+`ANTHROPIC_API_KEY` must be set in `.env`. The model is hardcoded as `claude-opus-4-7` in `Claude/grading_context.py`; sampling temperature parameters are not set (they are rejected by this model). Grading consistency is delegated to the rubric prompt, the cached shared context, and the schema-constrained tool call.
+
+### 8.2 Run
+
+``` bash
+python Claude/batch_grade.py --lab-number 9
+python Claude/batch_grade.py -n 4            # short form
+```
+
+`BASE_LAB_DIR` must be set in `.env`.
+
+For each student submission file the pipeline:
+
+1.  Loads shared grading materials once (rubric, starter, solution, grader instructions) from `assignment/`.
+2.  Builds the request:
+    -   A **system parameter** — a list of text blocks containing the grader instructions, tagged with `"cache_control": {"type": "ephemeral"}`. The Anthropic Messages API requires the list form (rather than a plain string) to attach cache breakpoints.
+    -   A **context user message** containing three ephemerally-cached content blocks: rubric JSON, starter `.qmd`, and instructor solution. Packing all three into a single user message with per-block cache tags creates a monotonically growing cached prefix and allows the API to reuse it across the full student batch.
+    -   A **student user message** containing the submission wrapped in `=== STUDENT_QMD_START ===` / `=== STUDENT_QMD_END ===` delimiters.
+3.  Sends a single synchronous request to the Anthropic Messages API with `tool_choice={"type": "tool", "name": "submit_grade"}`, forcing the model to call the `submit_grade` tool exactly once. The tool's `input_schema` is a JSON Schema that matches the expected grading output, guaranteeing a valid, pre-parsed dict without any additional JSON parsing step.
+4.  Extracts the tool-call `input` from the response's `content` blocks.
+
+Results are written to `{BASE_LAB_DIR}/lab-{N}/lab{N}_grades_claude-opus-4-7.csv` (UTF-8).
+
+### 8.3 Grading a single student (programmatic use)
+
+``` python
+import sys
+sys.path.insert(0, "Claude")
+
+from pathlib import Path
+import grading_context
+from grade_student import grade_student_qmd
+
+grading_context.configure(9)
+result = grade_student_qmd(Path("assignment/student_1/lab-9.qmd"))
+
+print(result["total"])
+# → 23.5
+
+for q, info in result["questions"].items():
+    print(f"{q}: {info['grade']}  —  {info['feedback']}")
+# → Q1: 5.0  —  Transition matrix correct; P^6 computed correctly.
+
+print(result["overall_comment"])
+# → Strong submission overall.
+```
+
+------------------------------------------------------------------------
+
+## 9. Output Format
+
+All pipelines produce a CSV file with one row per student.
+
+### 9.1 R Assistants v2 output — `assignment/r_lab{N}_grades_{model}.csv`
 
 | Column | Type | Description |
 |------------------------|------------------------|------------------------|
@@ -435,7 +481,7 @@ Encoding: UTF-8 BOM (for direct opening in Excel without import dialog).
 |------------|------------|------------|------------|------------|------------|
 | Ama8777 | 5 | 4 | 3.5 | 23.5 | Q1. Correct. \| Q2. sum(pi) check missing. \| Q3. Derivation incomplete. |
 
-### 8.2 Python output — `{BASE_LAB_DIR}/lab-{N}/lab{N}_grades_{model}.csv`
+### 9.2 Python output — `{BASE_LAB_DIR}/lab-{N}/lab{N}_grades_{model}.csv`
 
 | Column | Type | Description |
 |------------------------|------------------------|------------------------|
@@ -447,36 +493,56 @@ Encoding: UTF-8 BOM (for direct opening in Excel without import dialog).
 
 Encoding: UTF-8.
 
-### 8.3 Error rows
+### 9.3 Claude output — `{BASE_LAB_DIR}/lab-{N}/lab{N}_grades_claude-opus-4-7.csv`
 
-If grading fails for an individual student (API timeout, malformed JSON, or missing file), both pipelines record an error row rather than halting the batch. In the R pipeline, all grade columns are set to `NA` and the `Comments` column contains the error description. In the Python pipeline, all grade columns are `None` and `OverallComment` contains the exception message. The batch continues with the next student.
+Identical column layout to the Python output (§9.2). The model name suffix is always `claude-opus-4-7` since the model is hardcoded.
+
+| Column | Type | Description |
+|------------------------|------------------------|------------------------|
+| `Student` | string | Student identifier |
+| `Total` | numeric | Recomputed sum of per-question grades |
+| `Model_Total` | numeric | Total as returned by the model (for cross-checking) |
+| `OverallComment` | string | 2–3 sentence summary |
+| `Q1` … `QN` | numeric | Grade per question |
+| `Q1_feedback` … `QN_feedback` | string | Feedback per question in separate columns |
+
+Encoding: UTF-8.
+
+### 9.4 Error rows
+
+If grading fails for an individual student (API timeout, malformed JSON, missing file, or missing tool-use block), all pipelines record an error row rather than halting the batch. All grade columns are set to `None`/`NA` and the comment column contains the exception message. The batch continues with the next student.
 
 ------------------------------------------------------------------------
 
-## 9. Pipeline Comparison
+## 10. Pipeline Comparison
 
-Three pipelines are available. The primary comparison in the JOSE paper is between the **Python** pipeline and the **R (Assistants v2)** pipeline; the **R (Chat Completions)** pipeline is a direct R port of the Python approach and serves as a bridge between the two.
+Four pipelines are available. The primary comparison in the JOSE paper is between the **Python** pipeline and the **R (Assistants v2)** pipeline; the **R (Chat Completions)** pipeline is a direct R port of the Python approach and serves as a language-control condition; the **Claude** pipeline demonstrates portability across LLM providers.
 
-| Aspect | Python | R — Chat Completions | R — Assistants v2 |
-|------------------|------------------|------------------|------------------|
-| **API** | Chat Completions | Chat Completions | Assistants v2 |
-| **Script(s)** | `grading_context.py`, `grade_student.py`, `batch_grade.py` | `chat_grading_runner.R` | `oaii_grading_assistant.R`, `oaii_grading_assistant_runner.R` |
-| **Execution** | Synchronous | Synchronous | Asynchronous with polling |
-| **Setup required** | None | None | One-time per assignment |
-| **Context delivery** | Inlined in every request | Inlined in every request | Uploaded once; retrieved via `file_search` |
-| **Caching** | Ephemeral prompt caching (OpenAI only; omitted for local providers) | Ephemeral prompt caching (OpenAI only; omitted for local providers) | Persistent file storage on OpenAI servers |
-| **Structured output** | `response_format = json_object` | `response_format = json_object` | `response_format = json_object` on run object |
-| **Output CSV encoding** | UTF-8 | UTF-8 | UTF-8 BOM |
-| **Feedback columns** | One column per question (`Q1_feedback`, …) | One column per question (`Q1_feedback`, …) | All feedback concatenated in `Comments` |
-| **Model** | configurable via `LLM_MODEL` (default `gpt-5.1`) | configurable via `LLM_MODEL` (default `gpt-5.1`) | configurable via `LLM_MODEL` (default `gpt-5.1`) |
+| Aspect | Python | Claude | R — Chat Completions | R — Assistants v2 |
+|---|---|---|---|---|
+| **API** | OpenAI Chat Completions | Anthropic Messages | OpenAI Chat Completions | OpenAI Assistants v2 |
+| **SDK** | `openai` | `anthropic` | `httr2` | `httr2` (via `oaii`) |
+| **Execution** | Synchronous | Synchronous | Synchronous | Asynchronous with polling |
+| **Setup required** | None | None | None | One-time per assignment |
+| **Context delivery** | Inlined in every request | Inlined in every request | Inlined in every request | Uploaded once; retrieved via `file_search` |
+| **Caching** | Ephemeral (OpenAI only) | Ephemeral (system blocks + 3 content blocks) | Ephemeral (OpenAI only) | Persistent file storage on OpenAI servers |
+| **Structured output** | `response_format=json_object` | Forced tool use (`submit_grade` tool) | `response_format=json_object` | `response_format=json_object` on run |
+| **Output parsing** | `json.loads()` | Tool-call `input` (pre-validated dict) | `jsonlite::fromJSON()` | `jsonlite::fromJSON()` |
+| **Temperature** | `0.1` | n/a | `0.1` | `0.1` |
+| **Model** | configurable via `LLM_MODEL` (default `gpt-5.1`) | `claude-opus-4-7` (hardcoded) | configurable via `LLM_MODEL` (default `gpt-5.1`) | configurable via `LLM_MODEL` (default `gpt-5.1`) |
+| **Local provider support** | Yes | No | Yes | No |
+| **CSV encoding** | UTF-8 | UTF-8 | UTF-8 | UTF-8 BOM |
+| **Feedback columns** | Per-question (`Q1_feedback`, …) | Per-question (`Q1_feedback`, …) | Per-question (`Q1_feedback`, …) | Concatenated in `Comments` |
 
 **Python** and **R (Chat Completions)** are operationally equivalent — stateless, no setup step, same caching strategy. The R Chat Completions runner exists to confirm that the Python pipeline's behaviour is reproducible in native R using the same API surface.
 
-**R (Assistants v2)** offloads grading materials to OpenAI file storage, keeping per-call payloads small. Repeated grading runs (e.g. late submissions) do not re-upload files. The cost is the two-script workflow and the asynchronous polling logic.
+**Claude** matches Python and R (Chat Completions) in execution model and context delivery but uses the Anthropic Messages API. The key structural difference is structured output: forced tool use guarantees a pre-validated dict rather than a JSON string, eliminating any parsing step. The Claude pipeline does not support local inference providers.
+
+**R (Assistants v2)** offloads grading materials to OpenAI file storage, keeping per-call payloads small. Repeated grading runs do not re-upload files. The cost is the two-script workflow and asynchronous polling logic.
 
 ------------------------------------------------------------------------
 
-## 10. Running Tests
+## 11. Running Tests
 
 Tests confirm correct behaviour of helper functions without making real API calls. A dummy API key (`sk-test-dummy-key-for-ci`) is used in CI; the OpenAI client is fully mocked in the Python tests.
 
@@ -498,11 +564,11 @@ Tests cover: `load_text()` (UTF-8 reading, `FileNotFoundError`), `build_system_m
 
 ------------------------------------------------------------------------
 
-## 11. Reliability Testing
+## 12. Reliability Testing
 
 Reliability testing measures grading variability by running each student submission through a pipeline multiple times with identical inputs and recording the spread of scores across runs.
 
-### 11.1 R reliability test
+### 12.1 R reliability test
 
 `R/reliability_test.R` drives repeated grading using the Chat Completions pipeline (`chat_grading_runner.R`). For each student it calls `grade_student()` `N` times and writes one CSV per student containing one row per run.
 
@@ -525,7 +591,7 @@ e.g. `R_assignments/lab-9_student_high_grades_gpt-5.1.csv`
 
 Each CSV has columns: `Run`, `Total`, `OverallComment`, `Q1`–`QN`, `Q1_feedback`–`QN_feedback`.
 
-### 11.2 Aggregating results
+### 12.2 Aggregating results
 
 `R/aggregate_results.R` reads the per-student reliability CSVs produced by both the Python and R pipelines and computes mean and standard deviation for each score column, writing a summary CSV with two rows per student (Python then R), separated by blank rows.
 
