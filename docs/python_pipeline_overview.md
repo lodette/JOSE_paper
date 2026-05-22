@@ -19,10 +19,13 @@ and grader instructions — all located in the `assignment/` directory except
 `grader_instructions.txt`, which lives in `Python/`. The
 `build_system_message()` function packages the grader instructions as an OpenAI
 system message. `build_cached_context_messages()` loads the rubric, starter, and
-solution as separate user messages each tagged with
+solution as separate user messages. When `LLM_PROVIDER` is `"openai"`
+(the default), each message is tagged with
 `"cache_control": {"type": "ephemeral"}`, allowing the OpenAI API to reuse a
 cached key-value representation of this shared prefix across the full batch of
-student calls, reducing both latency and token cost.
+student calls, reducing both latency and token cost. When `LLM_PROVIDER`
+is `"local"`, the `cache_control` field is omitted, since local runtimes
+do not support this OpenAI-specific extension.
 
 ## Single-Student Grading
 
@@ -33,7 +36,8 @@ keeping the module free of side effects at import time. The function assembles
 the full message list — system message, three cached context messages, and a
 final user message containing the student submission wrapped in
 `=== STUDENT_QMD_START/END ===` delimiters — and sends a single synchronous
-request to the Chat Completions API using the `gpt-5.1` model.
+request to the Chat Completions API using the model specified by `LLM_MODEL`
+(default: `gpt-5.1`).
 `response_format={"type": "json_object"}` is set to enforce valid JSON output,
 and `temperature=0.1` is used to minimise grading variability. The response is
 parsed with `json.loads()` into a structured dictionary containing per-question
@@ -49,7 +53,7 @@ the student ID from the containing folder name, and calls `grade_student_qmd()`
 for each. Each student is wrapped in a `try/except` block so that an API error
 or unexpected response for one student writes an error row to the output and
 allows the batch to continue. Results are flattened into rows and written to a
-UTF-8 CSV file (`lab{N}_grades.csv`) with columns for the student ID,
+UTF-8 CSV file (`lab{N}_grades_{model}.csv`) with columns for the student ID,
 per-question grades (`Q1`–`Q10`) and feedback, a total, and an overall comment.
 Because each student is graded in an independent, stateless API call, the batch
 can be resumed or rerun without any server-side cleanup.

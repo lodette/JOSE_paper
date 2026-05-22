@@ -41,6 +41,7 @@ grade_student <- runner_env$grade_student
 
 # ---- paths and column layout ----
 directory_path  <- runner_env$directory_path
+MODEL           <- runner_env$MODEL
 
 Q_COUNT         <- runner_env$Q_COUNT
 Q_COLS          <- paste0("Q", seq_len(Q_COUNT))
@@ -159,7 +160,8 @@ main <- function() {
       stringr::str_glue("(?i)^lab-{LAB_NUMBER}_")
     )
     output_csv   <- file.path(directory_path,
-                              paste0(folder_name, "_grades.csv"))
+                              paste0(folder_name, "_grades_",
+                                     model_slug(MODEL), ".csv"))
 
     # Detect existing runs so new ones continue from the last run number
     if (file.exists(output_csv)) {
@@ -187,9 +189,9 @@ main <- function() {
 }
 
 # run
-if (identical(environment(), globalenv())) {
+if (!interactive()) {
   tryCatch(main(), error = function(e) {
     message("Error: ", conditionMessage(e))
-    if (!interactive()) quit(save = "no", status = 1)
+    quit(save = "no", status = 1)
   })
 }

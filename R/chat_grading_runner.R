@@ -16,10 +16,29 @@ if (file.exists(".env")) dotenv::load_dot_env()
 source("./R/utils.R")
 
 # ---- config ----
-LAB_NUMBER  <- 4
-MODEL       <- "gpt-5.1"
-TEMPERATURE <- 0.1
-Q_COUNT     <- 10L
+if (!exists("LAB_NUMBER")) LAB_NUMBER <- 4
+TEMPERATURE  <- 0.1
+Q_COUNT      <- 10L
+
+# ── LLM provider config ──────────────────────────────────────────────────────
+# To use a local LM Studio or Ollama server instead of the OpenAI API, uncomment
+# and fill in the three lines below before sourcing this script.  Leave them
+# commented out to use the OpenAI API with gpt-5.1 (no changes needed).
+#
+# Sys.setenv(LLM_PROVIDER = "local")
+# Sys.setenv(LLM_BASE_URL = "http://localhost:1234/v1")  # LM Studio default; adjust port if needed
+# Sys.setenv(LLM_MODEL    = "<model-name>")              # must match name shown in /v1/models
+#
+LLM_PROVIDER <- Sys.getenv("LLM_PROVIDER", unset = "openai")   # "openai" | "local"
+LLM_BASE_URL <- Sys.getenv("LLM_BASE_URL", unset = "https://api.openai.com/v1")
+CHAT_URL     <- paste0(LLM_BASE_URL, "/chat/completions")
+LLM_API_KEY  <- if (LLM_PROVIDER == "openai") {
+  Sys.getenv("OPENAI_API_KEY", unset = NA_character_)
+} else {
+  key <- Sys.getenv("LLM_API_KEY", unset = "")
+  if (!nzchar(key)) "lm-studio" else key
+}
+MODEL <- Sys.getenv("LLM_MODEL", unset = "gpt-5.1")
 
 # ---- paths ----
 RUBRIC_PATH       <- stringr::str_glue("./R assignments/lab_{LAB_NUMBER}_rubric.json")
@@ -28,7 +47,7 @@ SOLUTION_PATH     <- stringr::str_glue("./R assignments/lab_{LAB_NUMBER}_solutio
 INSTRUCTIONS_PATH <- "./Python/grader_instructions.txt"
 
 directory_path <- paste0(getwd(), "/R assignments/lab-", LAB_NUMBER)
-output_csv     <- stringr::str_glue("{directory_path}/r_chat_lab{LAB_NUMBER}_grades.csv")
+output_csv     <- stringr::str_glue("{directory_path}/r_chat_lab{LAB_NUMBER}_grades_{model_slug(MODEL)}.csv")
 
 Q_COLS          <- paste0("Q", seq_len(Q_COUNT))
 Q_FEEDBACK_COLS <- paste0("Q", seq_len(Q_COUNT), "_feedback")
@@ -47,9 +66,11 @@ COL_ORDER       <- c("Student", "Total", "Model_Total", "OverallComment", Q_COLS
 #' @returns An \code{httr2_request} object ready for a JSON body and
 #'   \code{httr2::req_perform()}.
 chat_req <- function() {
-  key <- base::Sys.getenv("OPENAI_API_KEY", unset = NA_character_)
-  if (base::is.na(key) || !base::nzchar(key)) stop("OPENAI_API_KEY is not set.")
-  httr2::request("https://api.openai.com/v1/chat/completions") |>
+  key <- LLM_API_KEY
+  if (LLM_PROVIDER == "openai" && (base::is.na(key) || !base::nzchar(key))) {
+    stop("OPENAI_API_KEY is not set.")
+  }
+  httr2::request(CHAT_URL) |>
     httr2::req_headers(
       "Authorization" = base::paste("Bearer", key),
       "Content-Type"  = "application/json"
@@ -67,10 +88,12 @@ chat_req <- function() {
 #' @seealso \code{\link{build_context_messages}}, \code{\link{grade_student}}
 build_system_message <- function() {
   if (!fs::file_exists(INSTRUCTIONS_PATH)) stop("Missing file: ", INSTRUCTIONS_PATH)
-  list(
-    role    = "system",
-    content = readr::read_file(INSTRUCTIONS_PATH)
-  )
+  content <- readr::read_file(INSTRUCTIONS_PATH)
+  # Qwen3 (and compatible models) run in thinking mode by default when served
+  # locally.  Appending /no_think disables the reasoning chain so that the
+  # response is returned directly in `content` rather than `reasoning_content`.
+  if (LLM_PROVIDER == "local") content <- paste0(content, "\n\n/no_think")
+  list(role = "system", content = content)
 }
 
 #' Build the three shared context messages with ephemeral prompt caching
@@ -97,31 +120,21 @@ build_context_messages <- function() {
   starter_text  <- readr::read_file(STARTER_PATH)
   solution_text <- readr::read_file(SOLUTION_PATH)
 
-  list(
-    list(
-      role          = "user",
-      cache_control = list(type = "ephemeral"),
-      content       = list(list(
-        type = "text",
-        text = paste0("Rubric JSON for lab ", LAB_NUMBER, ":\n\n", rubric_text)
-      ))
-    ),
-    list(
-      role          = "user",
-      cache_control = list(type = "ephemeral"),
-      content       = list(list(
-        type = "text",
-        text = paste0("Starter .qmd template for lab ", LAB_NUMBER, ":\n\n", starter_text)
-      ))
-    ),
-    list(
-      role          = "user",
-      cache_control = list(type = "ephemeral"),
-      content       = list(list(
-        type = "text",
-        text = paste0("Solution .qmd for lab ", LAB_NUMBER, ":\n\n", solution_text)
-      ))
+  use_cache <- (LLM_PROVIDER == "openai")
+
+  make_msg <- function(text) {
+    msg <- list(
+      role    = "user",
+      content = list(list(type = "text", text = text))
     )
+    if (use_cache) msg$cache_control <- list(type = "ephemeral")
+    msg
+  }
+
+  list(
+    make_msg(paste0("Rubric JSON for lab ", LAB_NUMBER, ":\n\n", rubric_text)),
+    make_msg(paste0("Starter .qmd template for lab ", LAB_NUMBER, ":\n\n", starter_text)),
+    make_msg(paste0("Solution .qmd for lab ", LAB_NUMBER, ":\n\n", solution_text))
   )
 }
 
@@ -168,20 +181,29 @@ grade_student <- function(student_qmd_path) {
   )
 
   body <- list(
-    model           = MODEL,
-    messages        = messages,
-    response_format = list(type = "json_object"),
-    temperature     = TEMPERATURE
+    model      = MODEL,
+    messages   = messages,
+    temperature = TEMPERATURE,
+    max_tokens  = 2048L
   )
+  if (LLM_PROVIDER == "openai") {
+    body$response_format <- list(type = "json_object")
+  }
 
   resp <- chat_req() |>
     httr2::req_body_json(body, auto_unbox = TRUE) |>
     httr2::req_perform()
   httr2::resp_check_status(resp)
 
-  result <- httr2::resp_body_json(resp, simplifyVector = FALSE)
-  jsonlite::fromJSON(result$choices[[1]]$message$content,
-                     simplifyVector = FALSE)
+  result  <- httr2::resp_body_json(resp, simplifyVector = FALSE)
+  raw     <- result$choices[[1]]$message$content
+  if (is.null(raw)) raw <- ""
+  raw     <- trimws(raw)
+  # Strip markdown JSON code fences that some models emit (e.g. ```json ... ```)
+  raw     <- gsub("^```(?:json)?\\s*\\n?", "", raw, perl = TRUE)
+  raw     <- gsub("\\n?```\\s*$",          "", raw, perl = TRUE)
+  raw     <- trimws(raw)
+  jsonlite::fromJSON(raw, simplifyVector = FALSE)
 }
 
 # ---- main ----
@@ -282,10 +304,10 @@ main <- function() {
   }
 }
 
-# run
-if (identical(environment(), globalenv())) {
+# run — only auto-execute when called as a script (Rscript), not on source()
+if (!interactive()) {
   tryCatch(main(), error = function(e) {
     message("Error: ", conditionMessage(e))
-    if (!interactive()) quit(save = "no", status = 1)
+    quit(save = "no", status = 1)
   })
 }

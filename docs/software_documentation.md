@@ -1,6 +1,6 @@
 # LLM-Based Automated Grading System — Software Documentation
 
-**Authors:** Louis L. Odette, Muhammad Sarim **Repository:** <https://github.com/wallyjulian/grading>
+**Authors:** Louis L. Odette, Muhammad Sarim **Repository:** <https://github.com/lodette/JOSE_paper>
 
 ------------------------------------------------------------------------
 
@@ -77,13 +77,31 @@ Both pipelines accept assignments containing any mix of programming questions, o
 
 ### API key
 
-Both pipelines require an OpenAI API key. Create a file named `.env` at the project root:
+Both pipelines require either an **OpenAI API key** or a **locally running LM Studio / Ollama server**. Create a file named `.env` at the project root:
 
-```         
-OPENAI_API_KEY=sk-...
+```ini
+OPENAI_API_KEY=sk-...       # Your OpenAI API key
+
+# Optional — uncomment to route calls to a local LM Studio / Ollama server instead:
+# LLM_PROVIDER=local
+# LLM_BASE_URL=http://localhost:1234/v1
+# LLM_MODEL=qwen/qwen3.6-27b   # exact API id from /v1/models
+# LLM_API_KEY=lm-studio
 ```
 
-This file is read automatically by both pipelines at startup and must not be committed to version control.
+This file is read automatically by both pipelines at startup and must not be committed to version control. When the four `LLM_*` variables are commented out (the default), both pipelines use the OpenAI API with `gpt-5.1`.
+
+When using LM Studio, the following server settings are required before starting the server:
+
+| Setting | Required value |
+|---------|---------------|
+| **API** | OpenAI-compatible (not "LM Studio API") |
+| **Enable Thinking** | Off |
+| **Context length** | 32768 |
+| **Structured output** | Off |
+| **Limit Response Length** | Off |
+
+When `LLM_PROVIDER=local` is set, both pipelines automatically adapt: ephemeral prompt caching is disabled, `response_format=json_object` is omitted, `/no_think` is appended to the system message (for Qwen3 models), and markdown code fences are stripped from responses if present.
 
 ### R
 
@@ -290,7 +308,7 @@ For each student subfolder the runner:
 5.  Polls the run status every 0.7 seconds until it reaches a terminal state (`"completed"`, `"failed"`, `"cancelled"`, or `"expired"`), with a 180-second timeout.
 6.  Extracts the assistant's reply and parses it with `jsonlite::fromJSON()`.
 
-Results are accumulated and written to `assignment/r_lab{N}_grades.csv` (UTF-8 BOM, for Excel compatibility) once all students have been processed.
+Results are accumulated and written to `assignment/r_lab{N}_grades_{model}.csv` (UTF-8 BOM, for Excel compatibility) once all students have been processed. The `{model}` suffix is the sanitised model name (e.g. `gpt-5.1`), allowing OpenAI and local-LLM output to coexist.
 
 ### 6.2 Chat Completions pipeline
 
@@ -302,7 +320,7 @@ Results are accumulated and written to `assignment/r_lab{N}_grades.csv` (UTF-8 B
 LAB_NUMBER <- 9
 ```
 
-`OPENAI_API_KEY` must be set in `.env` or the environment.
+`OPENAI_API_KEY` must be set in `.env` or the environment (or the four `LLM_*` variables for a local provider — see §3).
 
 #### 6.2.2 Run
 
@@ -314,11 +332,11 @@ main()
 For each student subfolder the runner:
 
 1.  Reads the student's `.qmd` file.
-2.  Assembles a message list: system message (from `Python/grader_instructions.txt`), three cached context messages (rubric, starter, solution each tagged with `cache_control = list(type = "ephemeral")`), and a user message containing the student submission.
-3.  Sends a single synchronous request to `POST /chat/completions` (`gpt-5.1`, `temperature = 0.1`, `response_format = json_object`).
+2.  Assembles a message list: system message (from `Python/grader_instructions.txt`), three context messages (rubric, starter, solution — each tagged with `cache_control = list(type = "ephemeral")` when `LLM_PROVIDER` is `"openai"`; the tag is omitted for local providers), and a user message containing the student submission.
+3.  Sends a single synchronous request to the configured endpoint (model configurable via `LLM_MODEL`, default `gpt-5.1`; `temperature = 0.1`; `response_format = json_object`).
 4.  Parses the reply with `jsonlite::fromJSON()`.
 
-Results are written to `R assignments/r_chat_lab{N}_grades.csv` (UTF-8, with separate `Q*_feedback` columns).
+Results are written to `R assignments/r_chat_lab{N}_grades_{model}.csv` (UTF-8, with separate `Q*_feedback` columns).
 
 ------------------------------------------------------------------------
 
@@ -348,12 +366,12 @@ For each student submission file the pipeline:
 1.  Loads shared grading materials once (rubric, starter, solution, grader instructions) from `assignment/`.
 2.  Builds the message list:
     -   A **system message** containing the grader instructions.
-    -   Three **context messages** (rubric, starter, solution), each tagged with `"cache_control": {"type": "ephemeral"}` so the OpenAI API can cache and reuse their key-value representations across the full batch, reducing both latency and token cost.
+    -   Three **context messages** (rubric, starter, solution), each tagged with `"cache_control": {"type": "ephemeral"}` when `LLM_PROVIDER` is `"openai"` so the API can cache and reuse their key-value representations across the full batch, reducing latency and token cost. The tag is omitted for local providers.
     -   A **user message** containing the student's `.qmd` source, wrapped in `=== STUDENT_QMD_START ===` / `=== STUDENT_QMD_END ===` delimiters.
-3.  Sends a single synchronous request to `POST /chat/completions` (`gpt-5.1`, `temperature=0.1`, `response_format={"type": "json_object"}`).
+3.  Sends a single synchronous request to the configured endpoint (model configurable via `LLM_MODEL`, default `gpt-5.1`; `temperature=0.1`; `response_format={"type": "json_object"}`).
 4.  Parses the response with `json.loads()`.
 
-Results are written to `{BASE_LAB_DIR}/lab-{N}/lab{N}_grades.csv` (UTF-8).
+Results are written to `{BASE_LAB_DIR}/lab-{N}/lab{N}_grades_{model}.csv` (UTF-8).
 
 ### 7.3 Grading a single student (programmatic use)
 
@@ -382,10 +400,10 @@ print(result["overall_comment"])
 
 Both pipelines produce a CSV file with one row per student.
 
-### 8.1 R output — `assignment/r_lab{N}_grades.csv`
+### 8.1 R output — `assignment/r_lab{N}_grades_{model}.csv`
 
 | Column | Type | Description |
-|----|----|----|
+|------------------------|------------------------|------------------------|
 | `Student` | string | Student identifier (folder name, minus the `lab-{N}_` prefix) |
 | `Q1` … `Q10` | numeric | Grade for each question |
 | `Total` | numeric | Overall total reported by the model |
@@ -396,13 +414,13 @@ Encoding: UTF-8 BOM (for direct opening in Excel without import dialog).
 **Example row:**
 
 | Student | Q1 | Q2 | Q3 | Total | Comments |
-|----|----|----|----|----|----|
+|------------|------------|------------|------------|------------|------------|
 | Ama8777 | 5 | 4 | 3.5 | 23.5 | Q1. Correct. \| Q2. sum(pi) check missing. \| Q3. Derivation incomplete. |
 
-### 8.2 Python output — `{BASE_LAB_DIR}/lab-{N}/lab{N}_grades.csv`
+### 8.2 Python output — `{BASE_LAB_DIR}/lab-{N}/lab{N}_grades_{model}.csv`
 
 | Column | Type | Description |
-|----|----|----|
+|------------------------|------------------------|------------------------|
 | `Student` | string | Student identifier |
 | `Total` | numeric | Overall total |
 | `OverallComment` | string | 2–3 sentence summary |
@@ -422,17 +440,17 @@ If grading fails for an individual student (API timeout, malformed JSON, or miss
 Three pipelines are available. The primary comparison in the JOSE paper is between the **Python** pipeline and the **R (Assistants v2)** pipeline; the **R (Chat Completions)** pipeline is a direct R port of the Python approach and serves as a bridge between the two.
 
 | Aspect | Python | R — Chat Completions | R — Assistants v2 |
-|----|----|----|----|
+|------------------|------------------|------------------|------------------|
 | **API** | Chat Completions | Chat Completions | Assistants v2 |
 | **Script(s)** | `grading_context.py`, `grade_student.py`, `batch_grade.py` | `chat_grading_runner.R` | `oaii_grading_assistant.R`, `oaii_grading_assistant_runner.R` |
 | **Execution** | Synchronous | Synchronous | Asynchronous with polling |
 | **Setup required** | None | None | One-time per assignment |
 | **Context delivery** | Inlined in every request | Inlined in every request | Uploaded once; retrieved via `file_search` |
-| **Caching** | Ephemeral prompt caching | Ephemeral prompt caching | Persistent file storage on OpenAI servers |
+| **Caching** | Ephemeral prompt caching (OpenAI only; omitted for local providers) | Ephemeral prompt caching (OpenAI only; omitted for local providers) | Persistent file storage on OpenAI servers |
 | **Structured output** | `response_format = json_object` | `response_format = json_object` | `response_format = json_object` on run object |
 | **Output CSV encoding** | UTF-8 | UTF-8 | UTF-8 BOM |
 | **Feedback columns** | One column per question (`Q1_feedback`, …) | One column per question (`Q1_feedback`, …) | All feedback concatenated in `Comments` |
-| **Model** | `gpt-5.1` | `gpt-5.1` | `gpt-5.1` |
+| **Model** | configurable via `LLM_MODEL` (default `gpt-5.1`) | configurable via `LLM_MODEL` (default `gpt-5.1`) | configurable via `LLM_MODEL` (default `gpt-5.1`) |
 
 **Python** and **R (Chat Completions)** are operationally equivalent — stateless, no setup step, same caching strategy. The R Chat Completions runner exists to confirm that the Python pipeline's behaviour is reproducible in native R using the same API surface.
 
@@ -458,7 +476,7 @@ Tests cover: R syntax validity, `qmd_to_temp_md()` error on missing file, `uploa
 pytest tests/ --ignore=tests/R
 ```
 
-Tests cover: `load_text()` (UTF-8 reading, `FileNotFoundError`), `build_system_message()` (structure and role), `build_cached_context_messages()` (three messages, ephemeral cache control), and `grade_student_qmd()` (response structure, model name, `response_format`, `FileNotFoundError` on missing submission).
+Tests cover: `load_text()` (UTF-8 reading, `FileNotFoundError`), `build_system_message()` (structure and role), `build_cached_context_messages()` (three messages with ephemeral cache control when `LLM_PROVIDER="openai"`; no `cache_control` key when `LLM_PROVIDER="local"`), and `grade_student_qmd()` (response structure, model name, `response_format`, `FileNotFoundError` on missing submission).
 
 ------------------------------------------------------------------------
 
@@ -482,10 +500,10 @@ Re-running the script **appends** new runs to existing CSVs with continuous run 
 **Output files** are written beside the student submission folders:
 
 ```         
-{directory_path}/{folder_name}_grades.csv
+{directory_path}/{folder_name}_grades_{model}.csv
 ```
 
-e.g. `R assignments/lab-9_student_high_grades.csv`
+e.g. `R assignments/lab-9_student_high_grades_gpt-5.1.csv`
 
 Each CSV has columns: `Run`, `Total`, `OverallComment`, `Q1`–`QN`, `Q1_feedback`–`QN_feedback`.
 
@@ -495,7 +513,7 @@ Each CSV has columns: `Run`, `Total`, `OverallComment`, `Q1`–`QN`, `Q1_feedbac
 
 **Prerequisites:**
 
--   R per-student CSVs in `R assignments/` matching `lab-{N}_*_grades.csv`
+-   R per-student CSVs in `R assignments/` matching `lab-{N}_*_grades_*.csv`
 -   Python per-student CSVs in `{BASE_LAB_DIR}/lab-{N}/` with matching names
 -   `BASE_LAB_DIR` environment variable set
 

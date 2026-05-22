@@ -28,6 +28,21 @@ openai_req <- function(path) {
     )
 }
 
+#' Sanitise a model name for use in output filenames
+#'
+#' Replaces spaces and forward slashes with underscores; all other characters
+#' (including dots and hyphens) are preserved.  For example, \code{"gpt-5.1"}
+#' stays \code{"gpt-5.1"} and \code{"qwen3.6 27b/q4"} becomes
+#' \code{"qwen3.6_27b_q4"}.  Mirrors \code{model_slug()} in
+#' \code{Python/grading_context.py}.
+#'
+#' @param model Character. Model name string, e.g. \code{"gpt-5.1"}.
+#'
+#' @returns A length-1 character string safe for use in a filename.
+model_slug <- function(model) {
+  gsub("[ /]", "_", model)
+}
+
 #' Safely coerce a value to a length-1 numeric
 #'
 #' A defensive wrapper around \code{as.numeric()} that returns \code{NA_real_}
