@@ -7,19 +7,19 @@ editor_options:
 # LLM-Based Automated Grading System for Quarto Lab Submissions
 
 An automated grading pipeline that uses a large language model (LLM) to evaluate student `.qmd` (Quarto) lab submissions against a structured rubric.
-Implemented in both **Python** and **R**, the two pipelines share the same goal and grading materials but differ in their API strategy, execution model, and configuration approach.
+Implemented in three flavours — **Python** (OpenAI Chat Completions), **R** (OpenAI Assistants v2), and **Claude** (Anthropic Messages API) — the pipelines share the same goal and grading materials but differ in their API surface, execution model, and configuration approach.
 Designed for use in graduate-level quantitative methods courses.
 
 ------------------------------------------------------------------------
 
 ## Overview
 
-Both pipelines read each student's Quarto lab file, supply the model with the grading rubric, the starter template, and the instructor solution, and return a structured JSON grade with per-question scores and feedback.
+All three pipelines read each student's Quarto lab file, supply the model with the grading rubric, the starter template, and the instructor solution, and return a structured JSON grade with per-question scores and feedback.
 Results are written to a CSV file for easy import into a gradebook.
 
 ```         
 Student .qmd  ─┐
-Rubric JSON   ─┤──▶  LLM (OpenAI or local)  ──▶  JSON grade  ──▶  grades.csv
+Rubric JSON   ─┤──▶  LLM (OpenAI or Anthropic or local)  ──▶  JSON grade  ──▶  grades.csv
 Starter .qmd  ─┤
 Solution .qmd ─┘
 ```
@@ -35,6 +35,12 @@ Solution .qmd ─┘
 │   ├── grade_student.py                  # Python: grades a single student .qmd
 │   ├── grading_context.py                # Python: loads rubric, templates, builds API messages
 │   └── grader_instructions.txt           # Python: system prompt for the LLM grader
+│
+├── Claude/
+│   ├── batch_grade.py                    # Claude: entry point — grades all students
+│   ├── grade_student.py                  # Claude: grades a single student .qmd
+│   ├── grading_context.py                # Claude: loads rubric, templates, builds API messages
+│   └── grader_instructions.txt           # Claude: system prompt for the LLM grader
 │
 ├── R/
 │   ├── chat_grading_runner.R             # R (primary): stateless Chat Completions grader
@@ -52,20 +58,21 @@ Solution .qmd ─┘
 ├── docs/
 │   ├── r_pipeline_overview.md            # Technical overview of the R pipeline
 │   ├── python_pipeline_overview.md       # Technical overview of the Python pipeline
+│   ├── claude_pipeline_overview.md       # Technical overview of the Claude pipeline
 │   └── pipeline_comparison.md           # Side-by-side comparison with table
 │
-├── .env.example                          # Python: template for environment variables
+├── .env.example                          # Template for environment variables (OpenAI + Anthropic keys)
 └── .gitignore
 ```
 
-> `assignment/` holds the shared grading materials for both pipelines.
+> `assignment/` holds the shared grading materials for all pipelines.
 > Student submission folders and generated CSV files are excluded from version control via `.gitignore`.
 
 ------------------------------------------------------------------------
 
 ## Shared Grading Materials
 
-Both pipelines require the same three files per lab, placed in `assignment/`:
+All pipelines require the same three files per lab, placed in `assignment/`:
 
 | File | Description |
 |----|----|
@@ -148,6 +155,74 @@ Write all results to `<BASE_LAB_DIR>/lab-<N>/lab<N>_grades_{model}.csv`.
 |--------------------------------|-------------------------------------------|
 | `Student`                      | Student ID extracted from the folder name |
 | `Total`                        | Sum of all question grades                |
+| `OverallComment`               | 2–3 sentence summary from the LLM         |
+| `Q1` … `Q10`                   | Numeric grade for each question           |
+| `Q1_feedback` … `Q10_feedback` | Per-question feedback from the LLM        |
+
+CSV encoding: **UTF-8**.
+
+------------------------------------------------------------------------
+
+## Claude Pipeline
+
+### How It Works
+
+The Claude pipeline uses the **Anthropic Messages API** and is fully stateless — no setup step is required.
+For each student, a single synchronous API call is made containing the rubric, solution, starter, and submission inlined in the request.
+Ephemeral prompt caching (`"cache_control": {"type": "ephemeral"}`) is applied to the cached system message and to each of the rubric, starter, and solution content blocks so that the shared prefix is reused across the full student batch, reducing both latency and token cost.
+Structured JSON output is enforced via **forced tool use**: a `submit_grade` tool is defined whose `input_schema` matches the grading schema, and `tool_choice={"type": "tool", "name": "submit_grade"}` requires the model to call it exactly once. This is the Anthropic-recommended analogue of OpenAI's `response_format={"type": "json_object"}`.
+Sampling parameters (`temperature`, `top_p`, `top_k`) are intentionally omitted — they are rejected by `claude-opus-4-7`. Grading consistency is delegated to the rubric prompt, the cached shared context, and the schema-constrained tool call.
+
+### Prerequisites
+
+-   Python 3.10+
+-   An [Anthropic API key](https://console.anthropic.com/settings/keys)
+
+``` bash
+pip install anthropic python-dotenv
+```
+
+### Configuration
+
+1.  Copy the example environment file:
+
+    ``` bash
+    cp .env.example .env
+    ```
+
+2.  Edit `.env` with your values:
+
+    ``` ini
+    ANTHROPIC_API_KEY=sk-ant-...    # Your Anthropic API key
+    BASE_LAB_DIR=/path/to/your/lab/folder
+    ```
+
+    `BASE_LAB_DIR` should be the parent folder containing a subdirectory named `lab-<N>`.
+    Student submission folders are expected inside `lab-<N>/`.
+
+### Usage
+
+``` bash
+python Claude/batch_grade.py                  # default lab (9)
+python Claude/batch_grade.py --lab-number 4   # grade lab 4
+python Claude/batch_grade.py -n 4             # short form
+```
+
+This will:
+1. Recursively find every `lab-<N>.qmd` file under `<BASE_LAB_DIR>/lab-<N>/`.
+2. Send each file to Claude along with the rubric, starter, and solution.
+3. Read the validated tool-call input directly as the structured grade.
+4. Write all results to `<BASE_LAB_DIR>/lab-<N>/lab<N>_grades.csv`.
+
+### Output Format (Claude)
+
+Identical to the Python pipeline:
+
+| Column                         | Description                               |
+|--------------------------------|-------------------------------------------|
+| `Student`                      | Student ID extracted from the folder name |
+| `Total`                        | Sum of all question grades                |
+| `Model_Total`                  | The total returned by the model (for drift checking) |
 | `OverallComment`               | 2–3 sentence summary from the LLM         |
 | `Q1` … `Q10`                   | Numeric grade for each question           |
 | `Q1_feedback` … `Q10_feedback` | Per-question feedback from the LLM        |
@@ -300,6 +375,21 @@ main()
 
 ## Pipeline Comparison
 
+| Aspect | Python | Claude | R |
+|----|----|----|----|
+| **API** | Chat Completions (`POST /chat/completions`) | Anthropic Messages (`POST /v1/messages`) | Assistants v2 (`/assistants`, `/threads`, `/runs`) |
+| **SDK** | `openai` | `anthropic` | `oaii` (R wrapper over `httr2`) |
+| **Execution model** | Synchronous — one HTTP call per student | Synchronous — one HTTP call per student | Asynchronous — thread created, run started, then polled |
+| **Setup required** | None — stateless, run directly | None — stateless, run directly | One-time setup script creates a persistent Assistant and uploads files |
+| **Context delivery** | Rubric, solution, and starter inlined in every request | Rubric, solution, and starter inlined in every request | Files uploaded once; model retrieves relevant chunks via `file_search` |
+| **Caching** | Ephemeral prompt caching on the shared prefix | Ephemeral prompt caching on the shared prefix (system + 3 content blocks) | Persistent file storage on OpenAI servers |
+| **Structured output** | `response_format={"type": "json_object"}` | Forced tool use (`tool_choice={"type": "tool", "name": "submit_grade"}`) with a JSON-schema-typed tool input | `response_format = list(type = "json_object")` on each run |
+| **Output parsing** | `json.loads()` | Read tool-call `input` directly — already a validated dict | `jsonlite::fromJSON()` |
+| **Sampling temperature** | `0.1` | n/a — `temperature`, `top_p`, `top_k` are rejected by `claude-opus-4-7` | `0.1` |
+| **Model** | `gpt-5.1` | `claude-opus-4-7` | `gpt-4.1-mini` |
+| **Scripts** | 3 modules in `Python/` | 3 modules in `Claude/` | 2 scripts in `R/` |
+| **CSV encoding** | UTF-8 | UTF-8 | UTF-8 BOM (Excel compatible) |
+| **Feedback columns** | Separate `Q1_feedback` … `Q10_feedback` | Separate `Q1_feedback` … `Q10_feedback` | Single concatenated `Comments` column |
 | Aspect | Python | R — Chat Completions | R — Assistants v2 |
 |----|----|----|----|
 | **API** | Chat Completions | Chat Completions | Assistants v2 |
@@ -345,8 +435,8 @@ Each rubric file (`lab_<N>_rubric.json`) follows this schema:
 
 ## Grader Instructions
 
-`Python/grader_instructions.txt` is used by the **Python** pipeline as the LLM system prompt.
-It instructs the model to:
+`Python/grader_instructions.txt` is used by the **Python** pipeline as the LLM system prompt and `Claude/grader_instructions.txt` is used by the **Claude** pipeline (the two files are nearly identical, differing only in how structured output is requested — JSON object vs `submit_grade` tool call).
+They instruct the model to:
 
 -   Grade only what appears in the student's `.qmd` source (not assumed execution output).
 -   Return a single JSON object with `questions`, `total`, and `overall_comment`.
@@ -368,7 +458,13 @@ Modify `Python/grader_instructions.txt` to adjust grading behaviour for both the
 python Python/batch_grade.py --lab-number 10
 ```
 
-**R** — set `LAB_NUMBER` at the top of `chat_grading_runner.R` and run:
+**Claude** — pass the lab number as a command-line argument:
+
+``` bash
+python Claude/batch_grade.py --lab-number 10
+```
+
+**R** — set `LAB_NUMBER` before sourcing the script:
 
 ``` r
 LAB_NUMBER <- 10
@@ -378,16 +474,14 @@ main()
 
 For both pipelines, place the corresponding files in `assignment/` and `R assignments/` before running:
 
--   `lab_10_rubric.json`
--   `lab_10_starter.qmd`
--   `lab_10_solutions.qmd`
+For all pipelines, add the corresponding files to `assignment/`: - `lab_10_rubric.json` - `lab_10_starter.qmd` - `lab_10_solutions.qmd`
 
 ------------------------------------------------------------------------
 
 ## Security Note
 
-Both pipelines read credentials from the `.env` file at the project root.
-This file must never be committed to version control — the `.gitignore` already excludes it.
+Your `.env` (Python and Claude) and `~/.Renviron` (R) files contain your OpenAI and/or Anthropic API keys and must never be committed to version control.
+The `.gitignore` in this repository already excludes `.env`.
 Always use `.env.example` as the sharing template.
 
 ------------------------------------------------------------------------
