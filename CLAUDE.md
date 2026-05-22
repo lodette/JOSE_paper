@@ -57,6 +57,15 @@ docs/                            # Pipeline overviews, CI notes, session logs
 ### Required
 - `.env` file at project root with `OPENAI_API_KEY=sk-...`
 
+### Optional — local LLM provider
+Add these to `.env` (commented out by default) to route calls to LM Studio / Ollama:
+```
+LLM_PROVIDER=local
+LLM_BASE_URL=http://localhost:1234/v1
+LLM_MODEL=<model name from /v1/models>
+LLM_API_KEY=lm-studio
+```
+
 ### R
 ```r
 # Install R dependencies (handled by librarian in the scripts)
@@ -90,13 +99,13 @@ main()
 ```r
 source("R/oaii_grading_assistant_runner.R")
 main()
-# Writes assignment/r_lab{LAB_NUMBER}_grades.csv
+# Writes assignment/r_lab{LAB_NUMBER}_grades_{model}.csv
 ```
 
 ### Python — Grade (single phase)
 ```bash
 python Python/batch_grade.py
-# Writes {BASE_LAB_DIR}/lab-{LAB_NUMBER}/lab{LAB_NUMBER}_grades.csv
+# Writes {BASE_LAB_DIR}/lab-{LAB_NUMBER}/lab{LAB_NUMBER}_grades_{model}.csv
 ```
 
 ---
@@ -138,8 +147,10 @@ Two GitHub Actions workflows with path-based triggers:
 
 ## Models
 
-- R runner: `gpt-5.1`, `temperature = 0.1` (set in `R/oaii_grading_assistant.R` and `start_run()` in `R/oaii_grading_assistant_runner.R`)
-- Python: `gpt-5.1` (set in `Python/grading_context.py`)
+- All pipelines: default `gpt-5.1`, configurable via `LLM_MODEL` env var
+- R Assistants v2 temperature: `0.1` (set in `start_run()` in `R/oaii_grading_assistant_runner.R`)
+- Python / R Chat Completions temperature: `0.1`
+- Local LLM: set `LLM_PROVIDER=local`, `LLM_BASE_URL`, `LLM_MODEL`, `LLM_API_KEY` in `.env`
 
 ---
 

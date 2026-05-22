@@ -112,7 +112,7 @@ compute_means <- function(csv_path, pipeline_label, student_name, q_cols) {
 main <- function() {
   r_csvs <- list.files(
     r_dir,
-    pattern   = stringr::str_glue("^lab-{LAB_NUMBER}_.+_grades\\.csv$"),
+    pattern   = stringr::str_glue("^lab-{LAB_NUMBER}_.+_grades_.+\\.csv$"),
     full.names = TRUE
   )
 
@@ -132,8 +132,8 @@ main <- function() {
   all_rows <- list()
 
   for (r_csv in sort(r_csvs)) {
-    fname        <- basename(r_csv)           # "lab-9_student_low_grades.csv"
-    folder_name  <- stringr::str_remove(fname, "_grades\\.csv$")
+    fname        <- basename(r_csv)           # "lab-9_student_low_grades_gpt-5.1.csv"
+    folder_name  <- stringr::str_remove(fname, "_grades_.+\\.csv$")
     student_name <- stringr::str_remove(
       folder_name,
       stringr::str_glue("(?i)^lab-{LAB_NUMBER}_")

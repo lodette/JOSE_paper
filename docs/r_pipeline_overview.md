@@ -62,7 +62,7 @@ conform to a single canonical schema: a `questions` object with keys
 top-level `total` and `overall_comment`. Per-question grades and
 feedback are assembled into a data frame alongside a computed total and
 concatenated comments column. The final results for all students are
-written to `r_lab{N}_grades.csv` with a UTF-8 BOM for Excel
+written to `r_lab{N}_grades_{model}.csv` with a UTF-8 BOM for Excel
 compatibility using `readr::write_excel_csv()`.
 
 ------------------------------------------------------------------------
@@ -77,9 +77,11 @@ step or server-side state is required.
 
 Grading materials (rubric JSON, starter `.qmd`, instructor solution
 `.qmd`) are read from `R assignments/` and inlined in every API call.
-Each material is wrapped in a `role = "user"` message tagged with
+Each material is wrapped in a `role = "user"` message. When
+`LLM_PROVIDER` is `"openai"` (the default), each message is tagged with
 `cache_control = list(type = "ephemeral")`, matching the Python
-pipeline's prompt-caching strategy exactly. The shared system prompt is
+pipeline's prompt-caching strategy exactly. When `LLM_PROVIDER` is
+`"local"`, the `cache_control` field is omitted. The shared system prompt is
 read from `Python/grader_instructions.txt`.
 
 ### Single-Student Grading
@@ -87,7 +89,7 @@ read from `Python/grader_instructions.txt`.
 `grade_student()` assembles the full message list — system message,
 three cached context messages, and a user message containing the student
 submission delimited by `=== STUDENT_QMD_START/END ===` — and sends a
-single synchronous POST to `/chat/completions` (`gpt-5.1`,
+single synchronous POST to the configured endpoint (`LLM_MODEL`, default `gpt-5.1`,
 `temperature = 0.1`, `response_format = json_object`). The response is
 parsed with `jsonlite::fromJSON()`.
 
@@ -95,7 +97,7 @@ parsed with `jsonlite::fromJSON()`.
 
 `main()` walks `R assignments/` for student submission subfolders, calls
 `grade_student()` for each, and writes results to
-`R assignments/r_chat_lab{N}_grades.csv` (UTF-8). Per-student exceptions
+`R assignments/r_chat_lab{N}_grades_{model}.csv` (UTF-8). Per-student exceptions
 are caught and recorded as error rows; the batch continues regardless.
 Output columns match the Python pipeline: `Student`, `Total`,
 `OverallComment`, `Q1`–`QN`, `Q1_feedback`–`QN_feedback`.
@@ -104,4 +106,6 @@ Output columns match the Python pipeline: `Student`, `Total`,
 
 `utils.R` provides `safe_num()`, a helper used by both
 `chat_grading_runner.R` and `reliability_test.R` to coerce parsed JSON
-values to numeric, returning `NA_real_` when conversion fails.
+values to numeric, returning `NA_real_` when conversion fails; and
+`model_slug()`, which sanitises the model name for use in output
+filenames (mirrors `model_slug()` in `Python/grading_context.py`).

@@ -127,6 +127,12 @@ Copy `.env.example` to `.env` and fill in your values:
 ``` ini
 OPENAI_API_KEY=sk-proj-...       # Your OpenAI API key
 BASE_LAB_DIR=/path/to/lab/folder # Parent folder containing lab-<N>/
+
+# Optional — uncomment to use a local LM Studio / Ollama server:
+# LLM_PROVIDER=local
+# LLM_BASE_URL=http://localhost:1234/v1
+# LLM_MODEL=qwen/qwen3.6-27b
+# LLM_API_KEY=lm-studio
 ```
 
 The `.env` file is excluded from version control. Never commit it.

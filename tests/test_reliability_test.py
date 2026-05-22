@@ -88,7 +88,7 @@ def test_main_appends_runs_with_continuous_numbering(tmp_path, monkeypatch):
     reliability_test.main(n_runs=2, lab_number=9)
     reliability_test.main(n_runs=2, lab_number=9)
 
-    output_csv = base_dir / "lab-9" / "lab-9_student_alpha_grades.csv"
+    output_csv = base_dir / "lab-9" / f"lab-9_student_alpha_grades_{grading_context.model_slug()}.csv"
     with output_csv.open(newline="", encoding="utf-8") as f:
         rows = list(csv.DictReader(f))
 
