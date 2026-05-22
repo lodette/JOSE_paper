@@ -17,8 +17,8 @@
 # ======================================================================
 
 # ---- config ----
-if (!exists("LAB_NUMBER")) LAB_NUMBER <- 9L
-if (!exists("OVERWRITE"))  OVERWRITE  <- FALSE
+if (!exists("LAB_NUMBER")) LAB_NUMBER <- 4L
+if (!exists("OVERWRITE"))  OVERWRITE  <- TRUE
 
 # ---- deps ----
 if (!"librarian" %in% rownames(installed.packages())) install.packages("librarian")
@@ -26,7 +26,7 @@ librarian::shelf(ellmer, readr, stringr, fs, jsonlite, jsonvalidate)
 if (file.exists(".env")) dotenv::load_dot_env()
 
 # ---- paths ----
-SOLUTION_PATH     <- stringr::str_glue("./R assignments/lab_{LAB_NUMBER}_solutions.qmd")
+SOLUTION_PATH     <- stringr::str_glue("./R_assignments/lab_{LAB_NUMBER}_solutions.qmd")
 SCHEMA_PATH       <- "./assignment/rubric_schema.json"
 INSTRUCTIONS_PATH <- "./python/rubric_instructions.txt"
 OUTPUT_PATH       <- stringr::str_glue("./assignment/lab_{LAB_NUMBER}_rubric.json")
@@ -121,7 +121,9 @@ main <- function() {
   ant_key <- Sys.getenv("ANT_API_KEY", unset = NA_character_)
   if (is.na(ant_key) || !nzchar(ant_key)) stop("ANT_API_KEY is not set.")
 
-  this_chat <- ellmer::chat_anthropic(api_key = ant_key)$clone()$set_turns(list())
+  this_chat <- ellmer::chat_anthropic(
+    credentials = function() ant_key
+  )$clone()$set_turns(list())
 
   # ---- call API ----
   # build_prompt() reads rubric_instructions.txt and substitutes
@@ -132,6 +134,11 @@ main <- function() {
     this_chat$chat(build_prompt(solution_txt, schema_txt), echo = "none"),
     error = function(e) stop("API call failed: ", conditionMessage(e))
   )
+
+  # ---- strip markdown fences if present ----
+  raw_result <- stringr::str_trim(raw_result)
+  raw_result <- stringr::str_remove(raw_result, "^```(?:json)?\\s*\\n?")
+  raw_result <- stringr::str_remove(raw_result, "\\n?```\\s*$")
 
   # ---- validate ----
   message("Validating output ...")

@@ -2,9 +2,10 @@
 .env
 env
 
-# Graded output
-*_grades.csv
-R vs python/student_mapping.private.csv
+# Graded output — deposited on Zenodo, not stored in repo
+*_grades*.csv
+*_rubric_coverage_raw*.csv
+*_rubric_coverage_summary*.csv
 
 # Python cache
 __pycache__/
@@ -17,6 +18,9 @@ README.html
 *.dvi
 *.ps
 *.zip
+
+# Zenodo deposit staging area
+zenodo_data/
 paper/paper_review.html
 paper/paper_review.md
 
@@ -36,3 +40,4 @@ renv/
 # R environment
 .Rprofile
 .Rhistory
+.positai

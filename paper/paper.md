@@ -42,7 +42,7 @@ Target total             800 to 1000 words
 
 This paper presents an open-source, LLM-based system for automatically grading long-form, mixed-format student assignments. The system processes student submissions in batch, returning a numeric grade and written feedback for each question, and is implemented in both R and Python. A JSON rubric schema and companion generation script allow instructors to define structured grading criteria without modifying the underlying code. The software is suited both for self-learning and for adoption by instructors who use text-based assignments to assess coding skills and conceptual understanding, and is particularly relevant in higher education settings where class sizes and time constraints make manual grading impractical.
 
-The materials are licensed under the GPL-3 and have been made publicly available at: <https://github.com/lodette/JOSE_paper> and <https://doi.org/10.5281/zenodo.19410580>.
+The materials are licensed under the GPL-3 and have been made publicly available at: <https://github.com/lodette/JOSE_paper>, <https://doi.org/10.5281/zenodo.19410580> (code), and <https://doi.org/10.5281/zenodo.20316269> (data).
 
 # Statement of Need
 
@@ -74,10 +74,10 @@ The repository also contains `docs/privacy_and_ethics.md`, which discusses priva
 
 # Reliability & Validity: Performance Against Rubrics
 
-After each grading run, the instructor reviewed approximately five submissions — selected to span the grade range — checking each question's numeric score against its written feedback for internal consistency. Corrections were infrequent; this review added roughly fifteen minutes per assignment and served as the primary quality gate before grades were released.
+The instructor reviewed five submissions after each grading run, checking scores against feedback for consistency — roughly fifteen minutes per assignment.
 
-To evaluate grading reliability, we ran both pipelines on two assignments — lab 4 (10 students) and lab 9 (3 students) — repeating each run 50 times per student per pipeline. Per-question score variance was low: most questions were graded identically on every run. Where variance occurred, standard deviations were typically below 0.25 grade points, with isolated cases reaching 0.5 on questions where student responses were ambiguous. R and Python means per question differed by less than one standard deviation in every case.
+Reliability was assessed by running both pipelines 50 times per student on lab 4 (10 students) and lab 9 (3 students). Per-question standard deviations were typically below 0.25 grade points, with isolated cases reaching 0.5; R and Python means differed by less than one standard deviation in every case.
 
-Rubric conformance was assessed by classifying each feedback string across all reliability runs using a lightweight LLM meta-evaluation, determining which sub-criteria (CodeExecution, ProcessFidelity, OutputAccuracy) were referenced and whether a deduction was implied. Results indicate the grader reliably attributes deductions to specific criteria for weaker submissions, but systematically under-verifies whichever sub-criterion requires independent checking of a non-obvious property — ProcessFidelity on Lab 9 (where correct numerical output is used as a proxy for correct process) and OutputAccuracy on Lab 4 (where expected outputs are complex R objects rather than scalar values). Details of this assessment are provided in the supplementary rubric conformance report.
+Rubric conformance was assessed via LLM meta-evaluation of feedback strings. The grader reliably attributes deductions to specific criteria but under-verifies whichever sub-criterion requires independent verification — ProcessFidelity in Lab 9 and OutputAccuracy in Lab 4. Targeted interventions improved coverage but revealed that source-code-only grading cannot distinguish semantically equivalent implementations; code execution is the principled solution for pipeline assignments. Full analysis is in the supplementary rubric conformance report.
 
 # References {#references .unnumbered}

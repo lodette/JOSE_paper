@@ -9,8 +9,8 @@ Expected run command once `OPENAI_API_KEY` is set:
 
 ```powershell
 $env:LAB_NUMBER="9"
-$env:BASE_LAB_DIR=(Resolve-Path ".\python assignments").Path
+$env:BASE_LAB_DIR=(Resolve-Path ".\python_assignments").Path
 python .\Python\batch_grade.py
 ```
 
-The output CSV will be written to `python assignments/lab-9/lab9_grades.csv`.
+The output CSV will be written to `python_assignments/lab-9/lab9_grades.csv`.

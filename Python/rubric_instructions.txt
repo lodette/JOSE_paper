@@ -19,6 +19,20 @@ Instructions:
     - Do not add fields that are not in the template.
     - Do not include explanations or commentary outside of the JSON.
     - Output must be valid JSON.
+  - For the `OA_proxy` field:
+    - Inspect the solution code for this question.
+    - If the expected output is a **complex R object** (e.g. a fitted model, a tibble with specific columns, a ggplot, a list) that cannot be verified by a grader reading source code alone, write a **single-condition** source-checkable proxy (one sentence, no "and"). The proxy must describe **one property of the output** that is directly visible in the code and not already tested by CodeExecution or ProcessFidelity.
+    - **Separation of concerns**: CodeExecution already checks that the correct functions are called. ProcessFidelity already checks the sequence and order of steps. The OA_proxy must test something different — the **shape or composition of the result**: the formula passed to a model, the grouping key that determines the number of output rows, the column used for a join, the variable assigned as the final result, etc.
+    - **One condition only**: if the proxy requires the word "and" to connect two checks, split it and keep only the most discriminating one — the single property whose presence most strongly implies the output is correct.
+    - If the expected output is a **scalar, a printed number, or a simple transformation** that the grader can verify from the code without execution, set `OA_proxy` to an empty string ("").
+    - Examples of good proxies (single condition, output-focused):
+      - "Check that `lm()` is called with formula `Sale_Price ~ Longitude + Latitude`." (model formula determines output structure)
+      - "Check that `group_by(wflow_id)` is followed by `slice(1)`, confirming one row per workflow in the result." (grouping key determines output dimensions)
+      - "Check that the result is assigned to `monthly_sales` with `group_by(year, month)` as the grouping." (grouping determines row count)
+    - Examples of **bad proxies** to avoid:
+      - "Check that `workflow_map(` is called with `resamples = train_resamples` and `grid = 5`, and that the pipeline includes `filter(...)`, `group_by(...)`, `arrange(...)`, and `slice(1)`." (four conditions — tests CE and PF, not OA)
+      - "Check that `rank_results(` is called with `all_workflows`, `rank_metric = 'rmse'`, and `select_best = TRUE`." (three conditions — the third is optional and causes grader uncertainty)
+    - The proxy must be checkable from the .qmd source alone — never reference expected numeric output values.
 
 Output Format:
   Return only the completed JSON object.

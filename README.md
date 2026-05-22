@@ -34,6 +34,7 @@ Solution .qmd ─┘
 │   ├── batch_grade.py                    # Python: entry point — grades all students
 │   ├── grade_student.py                  # Python: grades a single student .qmd
 │   ├── grading_context.py                # Python: loads rubric, templates, builds API messages
+│   ├── summarize_criterion_coverage.py   # Python: criterion coverage summary from graded output
 │   └── grader_instructions.txt           # Python: system prompt for the LLM grader
 │
 ├── Claude/
@@ -59,7 +60,8 @@ Solution .qmd ─┘
 │   ├── r_pipeline_overview.md            # Technical overview of the R pipeline
 │   ├── python_pipeline_overview.md       # Technical overview of the Python pipeline
 │   ├── claude_pipeline_overview.md       # Technical overview of the Claude pipeline
-│   └── pipeline_comparison.md           # Side-by-side comparison with table
+│   ├── pipeline_comparison.md            # Side-by-side comparison with table
+│   └── rubric_conformance.md             # Rubric conformance analysis and prompt interventions (A–C2)
 │
 ├── .env.example                          # Template for environment variables (OpenAI + Anthropic keys)
 └── .gitignore
@@ -67,6 +69,9 @@ Solution .qmd ─┘
 
 > `assignment/` holds the shared grading materials for all pipelines.
 > Student submission folders and generated CSV files are excluded from version control via `.gitignore`.
+
+The prompt interventions developed to improve rubric criterion coverage (Interventions A–C2) are documented in [`docs/rubric_conformance.md`](docs/rubric_conformance.md), including the changes made to `grader_instructions.txt` and the rubric schema at each stage.
+The intervention branches (`intervention-a`, `intervention-b`, `intervention-c`) in the repository history correspond to these stages.
 
 ------------------------------------------------------------------------
 
@@ -101,8 +106,8 @@ Ephemeral prompt caching (`"cache_control": {"type": "ephemeral"}`) is applied t
 
 ### Prerequisites
 
--   Python 3.10+
--   An [OpenAI API key](https://platform.openai.com/api-keys) *or* a locally running LM Studio / Ollama server
+- Python 3.10+
+- An [OpenAI API key](https://platform.openai.com/api-keys) *or* a locally running LM Studio / Ollama server
 
 ``` bash
 pip install openai python-dotenv
@@ -125,7 +130,7 @@ pip install openai python-dotenv
     # Optional — uncomment to use a local LM Studio / Ollama server instead:
     # LLM_PROVIDER=local
     # LLM_BASE_URL=http://localhost:1234/v1
-    # LLM_MODEL=qwen/qwen3.6-27b
+    # LLM_MODEL=qwen3.6-27b-q4_k_m
     # LLM_API_KEY=lm-studio
     ```
 
@@ -244,9 +249,9 @@ Ephemeral prompt caching is applied to the shared context when using the OpenAI 
 
 ### Prerequisites
 
--   R 4.4+
--   An [OpenAI API key](https://platform.openai.com/api-keys) *or* a locally running LM Studio / Ollama server
--   The following R packages (installed automatically via `librarian` on first run): `httr2`, `jsonlite`, `stringr`, `readr`, `fs`
+- R 4.4+
+- An [OpenAI API key](https://platform.openai.com/api-keys) *or* a locally running LM Studio / Ollama server
+- The following R packages (installed automatically via `librarian` on first run): `httr2`, `jsonlite`, `stringr`, `readr`, `fs`
 
 ### Configuration
 
@@ -280,11 +285,11 @@ main()
 Or use the **Source** button in RStudio.
 The script will:
 
-1.  Read the rubric, starter, and solution from `R assignments/`.
-2.  Walk every student subfolder in `R assignments/lab-<N>/`.
+1.  Read the rubric, starter, and solution from `R_assignments/`.
+2.  Walk every student subfolder in `R_assignments/lab-<N>/`.
 3.  Send each submission to the LLM with the shared grading context.
 4.  Parse the JSON response.
-5.  Write results to `R assignments/lab-<N>/r_chat_lab<N>_grades_{model}.csv`.
+5.  Write results to `R_assignments/lab-<N>/r_chat_lab<N>_grades_{model}.csv`.
 
 ### Output Format (R Chat Completions)
 
@@ -318,13 +323,13 @@ Both the Python and R Chat Completions pipelines can route calls to a locally ru
 3.  Load the model (click the model name → **Load**).
 4.  Open the **Developer** tab. Before starting the server, apply these settings for the loaded model:
 
-| Setting | Required value |
-|---------|---------------|
-| **API** | OpenAI-compatible (not "LM Studio API") |
-| **Enable Thinking** | Off |
-| **Context length** | 32768 |
-| **Structured output** | Off |
-| **Limit Response Length** | Off |
+| Setting                   | Required value                          |
+|---------------------------|-----------------------------------------|
+| **API**                   | OpenAI-compatible (not "LM Studio API") |
+| **Enable Thinking**       | Off                                     |
+| **Context length**        | 32768                                   |
+| **Structured output**     | Off                                     |
+| **Limit Response Length** | Off                                     |
 
 5.  Start the local server. The default address is `http://localhost:1234/v1`. Confirm the server is running before proceeding.
 
@@ -335,7 +340,7 @@ Uncomment and fill in the four `LLM_*` lines in your `.env`:
 ``` ini
 LLM_PROVIDER=local
 LLM_BASE_URL=http://localhost:1234/v1
-LLM_MODEL=qwen/qwen3.6-27b
+LLM_MODEL=qwen3.6-27b-q4_k_m
 LLM_API_KEY=lm-studio
 ```
 
@@ -352,7 +357,7 @@ Uncomment the three `Sys.setenv()` lines near the top of `chat_grading_runner.R`
 ``` r
 Sys.setenv(LLM_PROVIDER = "local")
 Sys.setenv(LLM_BASE_URL = "http://localhost:1234/v1")
-Sys.setenv(LLM_MODEL    = "qwen/qwen3.6-27b")
+Sys.setenv(LLM_MODEL    = "qwen3.6-27b-q4_k_m")
 ```
 
 Then run as normal:
@@ -364,46 +369,31 @@ main()
 
 ### Notes
 
--   The model name passed as `LLM_MODEL` must match the API identifier that LM Studio reports, which may differ from the download name. Verify with `curl http://localhost:1234/v1/models` or the equivalent `httr2` call in R.
--   Ephemeral prompt caching is an OpenAI-specific feature and is disabled automatically when `LLM_PROVIDER=local`.
--   `response_format=json_object` is omitted for local providers; the grader instructions instruct the model to return valid JSON instead. Markdown code fences (` ```json ``` `) are stripped automatically if the model emits them.
--   For Qwen3 models, `/no_think` is appended to the system message automatically when `LLM_PROVIDER=local` to suppress chain-of-thought output, which would otherwise leave the `content` field empty.
--   Output files include the model name as a suffix (e.g. `lab4_grades_qwen_qwen3.6-27b.csv`), so local and OpenAI results coexist without overwriting each other.
--   Local model grading quality has not been formally evaluated in this study.
+- The model name must match exactly what LM Studio reports — check the **Developer** tab or query `http://localhost:1234/v1/models`.
+- Ephemeral prompt caching is an OpenAI-specific feature and is disabled automatically when `LLM_PROVIDER=local`.
+- Output files include the model name as a suffix (e.g. `lab4_grades_qwen3.6-27b-q4_k_m.csv`), so local and OpenAI results coexist without overwriting each other.
+- Local model grading quality has not been formally evaluated in this study.
 
 ------------------------------------------------------------------------
 
 ## Pipeline Comparison
 
-| Aspect | Python | Claude | R |
-|----|----|----|----|
-| **API** | Chat Completions (`POST /chat/completions`) | Anthropic Messages (`POST /v1/messages`) | Assistants v2 (`/assistants`, `/threads`, `/runs`) |
-| **SDK** | `openai` | `anthropic` | `oaii` (R wrapper over `httr2`) |
-| **Execution model** | Synchronous — one HTTP call per student | Synchronous — one HTTP call per student | Asynchronous — thread created, run started, then polled |
-| **Setup required** | None — stateless, run directly | None — stateless, run directly | One-time setup script creates a persistent Assistant and uploads files |
-| **Context delivery** | Rubric, solution, and starter inlined in every request | Rubric, solution, and starter inlined in every request | Files uploaded once; model retrieves relevant chunks via `file_search` |
-| **Caching** | Ephemeral prompt caching on the shared prefix | Ephemeral prompt caching on the shared prefix (system + 3 content blocks) | Persistent file storage on OpenAI servers |
-| **Structured output** | `response_format={"type": "json_object"}` | Forced tool use (`tool_choice={"type": "tool", "name": "submit_grade"}`) with a JSON-schema-typed tool input | `response_format = list(type = "json_object")` on each run |
-| **Output parsing** | `json.loads()` | Read tool-call `input` directly — already a validated dict | `jsonlite::fromJSON()` |
-| **Sampling temperature** | `0.1` | n/a — `temperature`, `top_p`, `top_k` are rejected by `claude-opus-4-7` | `0.1` |
-| **Model** | `gpt-5.1` | `claude-opus-4-7` | `gpt-4.1-mini` |
-| **Scripts** | 3 modules in `Python/` | 3 modules in `Claude/` | 2 scripts in `R/` |
-| **CSV encoding** | UTF-8 | UTF-8 | UTF-8 BOM (Excel compatible) |
-| **Feedback columns** | Separate `Q1_feedback` … `Q10_feedback` | Separate `Q1_feedback` … `Q10_feedback` | Single concatenated `Comments` column |
-| Aspect | Python | R — Chat Completions | R — Assistants v2 |
-|----|----|----|----|
-| **API** | Chat Completions | Chat Completions | Assistants v2 |
-| **Execution model** | Synchronous | Synchronous | Asynchronous with polling |
-| **Setup required** | None | None | One-time per assignment |
-| **Context delivery** | Inlined in every request | Inlined in every request | Uploaded once; retrieved via `file_search` |
-| **Caching** | Ephemeral (OpenAI only) | Ephemeral (OpenAI only) | Persistent file storage on OpenAI servers |
-| **Local provider support** | Yes | Yes | No |
-| **Structured output** | `response_format={"type": "json_object"}` | `response_format = list(type = "json_object")` | `response_format = list(type = "json_object")` on run |
-| **Output parsing** | `json.loads()` | `jsonlite::fromJSON()` | `jsonlite::fromJSON()` |
-| **Model** | configurable via `LLM_MODEL` (default `gpt-5.1`) | configurable via `LLM_MODEL` (default `gpt-5.1`) | configurable via `LLM_MODEL` (default `gpt-5.1`) |
-| **Scripts** | 3 modules in `Python/` | `chat_grading_runner.R`, `utils.R` | `oaii_grading_assistant.R`, `oaii_grading_assistant_runner.R` |
-| **CSV encoding** | UTF-8 | UTF-8 | UTF-8 BOM (Excel compatible) |
-| **Feedback columns** | Separate `Q1_feedback` … `QN_feedback` | Separate `Q1_feedback` … `QN_feedback` | Single concatenated `Comments` column |
+| Aspect | Python | Claude | R — Chat Completions | R — Assistants v2 |
+|---|---|---|---|---|
+| **API** | Chat Completions | Anthropic Messages | Chat Completions | Assistants v2 |
+| **SDK** | `openai` | `anthropic` | `httr2` | `httr2` (via `oaii` wrapper) |
+| **Execution model** | Synchronous | Synchronous | Synchronous | Asynchronous with polling |
+| **Setup required** | None | None | None | One-time per assignment |
+| **Context delivery** | Inlined in every request | Inlined in every request | Inlined in every request | Uploaded once; retrieved via `file_search` |
+| **Caching** | Ephemeral (OpenAI only) | Ephemeral prompt caching (system + 3 content blocks) | Ephemeral (OpenAI only) | Persistent file storage on OpenAI servers |
+| **Local provider support** | Yes | No | Yes | No |
+| **Structured output** | `response_format={"type": "json_object"}` | Forced tool use (`tool_choice` + JSON-schema tool input) | `response_format = list(type = "json_object")` | `response_format = list(type = "json_object")` on run |
+| **Output parsing** | `json.loads()` | Tool-call `input` (pre-validated dict) | `jsonlite::fromJSON()` | `jsonlite::fromJSON()` |
+| **Temperature** | `0.1` | n/a (not accepted by `claude-opus-4-7`) | `0.1` | `0.1` |
+| **Model** | configurable via `LLM_MODEL` (default `gpt-5.1`) | `claude-opus-4-7` | configurable via `LLM_MODEL` (default `gpt-5.1`) | configurable via `LLM_MODEL` (default `gpt-5.1`) |
+| **Scripts** | 3 modules in `Python/` | 3 modules in `Claude/` | `chat_grading_runner.R`, `utils.R` | `oaii_grading_assistant.R`, `oaii_grading_assistant_runner.R` |
+| **CSV encoding** | UTF-8 | UTF-8 | UTF-8 | UTF-8 BOM (Excel compatible) |
+| **Feedback columns** | Separate `Q1_feedback` … `QN_feedback` | Separate `Q1_feedback` … `QN_feedback` | Separate `Q1_feedback` … `QN_feedback` | Single concatenated `Comments` column |
 
 ------------------------------------------------------------------------
 
@@ -426,7 +416,8 @@ Each rubric file (`lab_<N>_rubric.json`) follows this schema:
       "ProcessFidelity (2 pt)": "...",
       "OutputAccuracy (2 pt)": "..."
     },
-    "DiscretionaryPenalty (up to -1 pt)": "..."
+    "DiscretionaryPenalty (up to -1 pt)": "...",
+    "OA_proxy": "Optional: a source-checkable property the grader should verify for OutputAccuracy (e.g. a specific function call or argument). Leave empty string if not needed."
   }
 }
 ```
@@ -438,9 +429,11 @@ Each rubric file (`lab_<N>_rubric.json`) follows this schema:
 `Python/grader_instructions.txt` is used by the **Python** pipeline as the LLM system prompt and `Claude/grader_instructions.txt` is used by the **Claude** pipeline (the two files are nearly identical, differing only in how structured output is requested — JSON object vs `submit_grade` tool call).
 They instruct the model to:
 
--   Grade only what appears in the student's `.qmd` source (not assumed execution output).
--   Return a single JSON object with `questions`, `total`, and `overall_comment`.
--   Keep feedback concise and rubric-aligned.
+- Grade only what appears in the student's `.qmd` source (not assumed execution output).
+- Assess each sub-criterion (`CodeExecution`, `ProcessFidelity`, `OutputAccuracy`) independently, producing a `met`/`evidence` block for each before assigning a grade.
+- When the rubric includes a non-empty `OA_proxy` field, use it as the primary basis for the `OutputAccuracy` assessment and cite it in `evidence`.
+- Return a single JSON object with `questions`, `total`, and `overall_comment`.
+- Keep feedback concise and rubric-aligned.
 
 The **R Chat Completions** pipeline (`chat_grading_runner.R`) uses the same `Python/grader_instructions.txt` file as the Python pipeline — any change to that file affects both pipelines equally.
 
@@ -472,9 +465,11 @@ source("R/chat_grading_runner.R")
 main()
 ```
 
-For both pipelines, place the corresponding files in `assignment/` and `R assignments/` before running:
+For both pipelines, place the corresponding files in `assignment/` and `R_assignments/` before running:
 
-For all pipelines, add the corresponding files to `assignment/`: - `lab_10_rubric.json` - `lab_10_starter.qmd` - `lab_10_solutions.qmd`
+- `lab_10_rubric.json`
+- `lab_10_starter.qmd`
+- `lab_10_solutions.qmd`
 
 ------------------------------------------------------------------------
 
@@ -492,6 +487,14 @@ If you use this system in your research, please cite:
 
 Sarim, M., & Odette, L. L.
 (2026).
-*LLM-Based Automated Grading System*.
+*LLM-Based Automated Grading System* [Software].
 Zenodo.
 <https://doi.org/10.5281/zenodo.19410580>
+
+The grading data (reliability runs and rubric conformance outputs) are deposited separately:
+
+Sarim, M., & Odette, L. L.
+(2026).
+*LLM-Based Automated Grading System — Grading Data* [Data set].
+Zenodo.
+<https://doi.org/10.5281/zenodo.20316269>

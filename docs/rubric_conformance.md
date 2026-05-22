@@ -420,6 +420,123 @@ complex later exercises.
 
 ------------------------------------------------------------------------
 
+## Interventions to Improve Rubric Conformance
+
+### Motivation
+
+The Lab 4 baseline results documented a structural gap: OutputAccuracy was
+mentioned in only 0–32% of grading runs for Q2–Q9, despite accounting for one
+third of each question's points. The cause is that Lab 4 exercises produce
+complex R objects — fitted workflows, recipe objects, tuned model specifications
+— whose correctness cannot be verified by reading source code alone. The
+baseline grader was awarding OA credit by default whenever CodeExecution and
+ProcessFidelity criteria were met.
+
+A series of prompt interventions was developed to address this, evaluated on the
+Lab 4 gpt-5.1 results (10 students, 50 runs per intervention).
+
+### Intervention A: Structured Sub-criterion Output
+
+The first intervention required the grader to produce a `{met, evidence}` block
+for each sub-criterion before assigning a grade. Explicitly attesting every
+criterion in the output substantially raised OA mention rates; subsequent
+interventions built on this format.
+
+### Intervention B: Inline OA Verification Instruction
+
+The second intervention added an explicit instruction to `grader_instructions.txt`
+directing the grader to verify OutputAccuracy independently of the other two
+criteria, even when the expected output is a complex R object. OA mention%
+reached ≈ 100% across all questions. Mean per-question scores shifted slightly
+downward (avg ≈ 1.62/3 vs baseline), and score variability increased modestly on
+questions where student code was partially correct (Q8 SD = 0.227;
+Q9 SD = 0.377).
+
+### Intervention C: Formalised OA Proxy in Rubric Schema
+
+The third intervention introduced an `OA_proxy` field to the rubric JSON schema.
+For exercises whose expected output is a complex R object, the rubric includes a
+single source-checkable proxy condition that the grader uses as its primary OA
+check. Example proxies:
+
+-   Q3: "Check that `recipes::recipe(` is called with formula
+    `Sale_Price ~ Longitude + Latitude + Lot_Area + Neighborhood + Year_Sold`."
+-   Q8: "Check that `dplyr::group_by(wflow_id)` is followed by
+    `dplyr::slice(1)` to produce one row per workflow."
+
+A companion `rubric_instructions.txt` prompt was used with `json_build.R` to
+generate proxies for all exercises. However, several generated proxies contained
+multiple conditions joined by "and" — effectively re-testing CodeExecution or
+ProcessFidelity properties rather than introducing a novel OA check. OA mention%
+remained ≈ 100%, but score stability worsened on questions with ambiguous student
+code: Q8 SD rose to 0.335 and Q9 SD to 0.482.
+
+### Intervention C2: Single-condition Proxy Rule
+
+The fourth intervention refined the proxy authoring rules in
+`rubric_instructions.txt` to enforce a single-condition constraint with explicit
+separation-of-concerns guidance and annotated bad-proxy examples. The Q8 and Q9
+proxies were manually trimmed:
+
+-   Q8 final proxy: the `group_by(wflow_id)` → `slice(1)` chain only (removing
+    conditions that re-tested CE/PF steps).
+-   Q9 final proxy: `rank_metric = 'rmse'` only (removing the optional
+    `select_best = TRUE` check).
+
+Score stability partially recovered (Q8 SD = 0.268; Q9 SD = 0.417) but remained
+above Intervention B levels. Residual variance reflects genuine ambiguity in
+those student submissions — any binary proxy check on partially correct code
+produces some run-to-run variance. Further proxy refinement cannot eliminate
+this; it is a ceiling effect for source-code-only grading.
+
+| Intervention | OA ment% (avg Q2–Q9) | Q8 SD | Q9 SD |
+|---|---|---|---|
+| Baseline | ≈ 14% | — | — |
+| B (inline instruction) | ≈ 100% | 0.227 | 0.377 |
+| C (OA proxy, multi-condition) | ≈ 100% | 0.335 | 0.482 |
+| C2 (OA proxy, single-condition) | ≈ 100% | 0.268 | 0.417 |
+
+### Structural Limitation: Semantic Equivalence
+
+Manual review of Intervention C2 grades identified a constraint that no prompt
+intervention can resolve. In Q3, the rubric specifies `step_center()` followed
+by `step_scale()` to normalise numeric predictors. Some students used
+`step_normalize()` instead — a single function that applies the same
+transformation. The two approaches are semantically equivalent and produce
+identical output. A grader reading source code must choose one interpretation or
+the other, but cannot verify equivalence without executing the code.
+
+The same pattern applies elsewhere in Lab 4: multiple valid tidymodels function
+sequences produce identical pipeline outputs, and source-code grading cannot
+distinguish them. This is the fundamental boundary for instruction-based prompt
+interventions — no prompt change can supply information that is not present in
+the source.
+
+Code execution is the principled solution. Rendering the student's `.qmd` and
+comparing the resulting R objects against the solution would resolve both the OA
+under-verification problem and the semantic equivalence problem simultaneously.
+Implementation requires a clean R environment with all required packages and
+data, plus per-student error isolation. This is left as future work.
+
+### Proxy Authoring Guidance
+
+When writing an `OA_proxy` for a rubric exercise:
+
+1.  **One condition only.** If the proxy requires "and" to connect two checks,
+    keep only the most discriminating one.
+2.  **Test output properties, not implementation steps.** CodeExecution already
+    checks that the right functions were called; ProcessFidelity already checks
+    the step sequence. The proxy should test a different property — the formula
+    passed to a model, the grouping variable that determines output dimensions,
+    or the column used for a join.
+3.  **Source-checkable only.** The proxy must be verifiable by reading the
+    `.qmd` source. Do not reference expected numeric values or runtime object
+    states.
+4.  **Leave it empty when unnecessary.** If the expected output is a scalar or
+    simple transformation verifiable by inspection, set `OA_proxy` to `""`.
+
+------------------------------------------------------------------------
+
 ## Cross-Lab Comparison
 
 |   | Lab 9 (gpt-5.1) | Lab 4 (gpt-5.1) | Lab 4 (qwen) |
@@ -454,10 +571,13 @@ under-verified.
 
 ## Summary of Findings
 
-1.  **Criterion coverage is not uniform.** Whichever sub-criterion is
-    hardest to verify by inspecting the feedback — PF in Lab 9, OA in
-    Lab 4 — is the one most likely to be omitted, regardless of its
-    point weight.
+1.  **Criterion coverage is not uniform, but responds to targeted
+    intervention.** Whichever sub-criterion is hardest to verify by
+    inspecting source code — PF in Lab 9, OA in Lab 4 — is the one most
+    likely to be omitted. Source-checkable OA proxies raised OA mention%
+    from ≈ 14% to ≈ 100% in Lab 4, but the deeper constraint remains:
+    source-code-only grading cannot distinguish semantically equivalent
+    implementations.
 
 2.  **Deduction attribution is generally accurate.** When the grader
     does penalise a student, the identified criterion usually
@@ -526,6 +646,11 @@ visibly — to human graders working under the same constraints.
     allocations (CE 1 / PF 2 / OA 2 vs. CE 1 / PF 1 / OA 1). Direct
     comparison of raw mention percentages across labs should account for
     these differences.
+-   **Semantic equivalence.** Source-code grading cannot distinguish
+    implementations that produce identical outputs by different code
+    paths (e.g., `step_normalize()` vs `step_center()` + `step_scale()`).
+    This is a structural property of source-code-only grading — not a
+    prompt failure — and requires code execution to resolve.
 
 ------------------------------------------------------------------------
 
@@ -533,12 +658,19 @@ visibly — to human graders working under the same constraints.
 *`assignment/lab_9_rubric_coverage_raw_gpt-5.1_meta_gpt-4o-mini.csv`*\
 *`assignment/lab_9_rubric_coverage_raw_qwen_qwen3.6-27b_meta_gpt-4o-mini.csv`*\
 *`assignment/lab_4_rubric_coverage_raw_gpt-5.1_meta_gpt-4o-mini.csv`*\
+*`assignment/lab_4_rubric_coverage_raw_gpt-5.1_intervention-a_meta_gpt-4o-mini.csv`*\
 *`assignment/lab_4_rubric_coverage_raw_qwen_qwen3.6-27b_meta_gpt-4o-mini.csv`*
 
-*Aggregated data:*\
+*Aggregated data (baseline):*\
 *`assignment/lab_9_rubric_coverage_summary_gpt-5.1_meta_gpt-4o-mini.csv`*\
 *`assignment/lab_9_rubric_coverage_summary_qwen_qwen3.6-27b_meta_gpt-4o-mini.csv`*\
 *`assignment/lab_4_rubric_coverage_summary_gpt-5.1_meta_gpt-4o-mini.csv`*\
 *`assignment/lab_4_rubric_coverage_summary_qwen_qwen3.6-27b_meta_gpt-4o-mini.csv`*
+
+*Aggregated data (interventions — Lab 4 gpt-5.1 only):*\
+*`assignment/lab_4_rubric_coverage_summary_gpt-5.1_intervention-a_meta_gpt-4o-mini.csv`*\
+*`assignment/lab_4_rubric_coverage_summary_gpt-5.1_intervention-b_direct.csv`*\
+*`assignment/lab_4_rubric_coverage_summary_gpt-5.1_intervention-c_direct.csv`*\
+*`assignment/lab_4_rubric_coverage_summary_gpt-5.1_intervention-c2_direct.csv`*
 
 *Analysis script: `Python/evaluate_rubric_coverage.py`.*

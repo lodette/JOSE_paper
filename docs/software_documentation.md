@@ -49,6 +49,7 @@ Both pipelines accept assignments containing any mix of programming questions, o
 │   ├── grading_context.py               # Config, shared message builders, prompt caching
 │   ├── grade_student.py                 # Grade a single student submission
 │   ├── batch_grade.py                   # Entry point: walk folders, grade all, write CSV
+│   ├── summarize_criterion_coverage.py  # Direct criterion coverage summary (Intervention B+)
 │   └── grader_instructions.txt          # System prompt passed to the LLM
 │
 ├── assignment/
@@ -176,7 +177,7 @@ Replace `{N}` with the lab number (e.g. `9`). The lab number is read from the `L
 
 ### 5.2 Rubric format
 
-The rubric is a JSON file with a `GlobalScoring` block and one entry per exercise (`Ex1`, `Ex2`, …). Each exercise has a `Points` value, a `Criteria` description, a `Checks` object with three named sub-criteria, and a `DiscretionaryPenalty` note.
+The rubric is a JSON file with a `GlobalScoring` block and one entry per exercise (`Ex1`, `Ex2`, …). Each exercise has a `Points` value, a `Criteria` description, a `Checks` object with three named sub-criteria, a `DiscretionaryPenalty` note, and an `OA_proxy` field. `OA_proxy` is a string describing a source-checkable property (a specific function call, formula, column name, or data input) that the grader should verify directly to assess OutputAccuracy. Set it to `""` when OutputAccuracy can be inferred from the code structure alone.
 
 ``` json
 {
@@ -206,18 +207,32 @@ The rubric exercises (`Ex1`, `Ex2`, …) map to question columns (`Q1`, `Q2`, �
 
 ### 5.3 Grader instructions (Python pipeline)
 
-`Python/grader_instructions.txt` contains the system prompt given to the LLM. It instructs the model to grade based on the `.qmd` source only (not assumed execution output), to apply the rubric criteria, and to return a single JSON object in the following schema:
+`Python/grader_instructions.txt` contains the system prompt given to the LLM. It instructs the model to grade based on the `.qmd` source only (not assumed execution output), to assess each sub-criterion independently before assigning a grade, and to return a single JSON object in the following schema:
 
 ``` json
 {
   "questions": {
-    "Q1": { "grade": 4.5, "feedback": "Transition matrix correct; P^6 computed correctly; output matches expected value." },
-    "Q2": { "grade": 3.0, "feedback": "Stationary distribution solved but sum(pi) verification missing." }
+    "Q1": {
+      "CodeExecution":   { "met": true,  "evidence": "matrix() and %^% operator used correctly." },
+      "ProcessFidelity": { "met": true,  "evidence": "Initial state vector multiplied with P^6 as specified." },
+      "OutputAccuracy":  { "met": true,  "evidence": "Code structure produces a result ≈ 0.75 as expected." },
+      "grade": 4.5,
+      "feedback": "Transition matrix correct; P^6 computed correctly; output matches expected value."
+    },
+    "Q2": {
+      "CodeExecution":   { "met": true,  "evidence": "eigen() called on transposed P." },
+      "ProcessFidelity": { "met": false, "evidence": "sum(pi) verification step absent." },
+      "OutputAccuracy":  { "met": true,  "evidence": "Stationary distribution values correct." },
+      "grade": 3.0,
+      "feedback": "Stationary distribution solved but sum(pi) verification missing."
+    }
   },
   "total": 7.5,
   "overall_comment": "Strong understanding of Markov chains. Minor gaps in verification steps."
 }
 ```
+
+When the rubric exercise includes a non-empty `OA_proxy` field, the grader uses it as the primary basis for the OutputAccuracy assessment, verifying the described property directly in the student's source and citing it in `OutputAccuracy.evidence`.
 
 Edit this file to update the grading instructions without changing any code.
 
@@ -312,7 +327,7 @@ Results are accumulated and written to `assignment/r_lab{N}_grades_{model}.csv` 
 
 ### 6.2 Chat Completions pipeline
 
-`chat_grading_runner.R` is a second R pipeline that mirrors the Python approach. Grading materials (rubric, starter, solution) are read from `R assignments/` and inlined in every API call with ephemeral prompt caching, keeping the workflow stateless — no setup phase or uploaded files required.
+`chat_grading_runner.R` is a second R pipeline that mirrors the Python approach. Grading materials (rubric, starter, solution) are read from `R_assignments/` and inlined in every API call with ephemeral prompt caching, keeping the workflow stateless — no setup phase or uploaded files required.
 
 #### 6.2.1 Set environment variables
 
@@ -336,7 +351,7 @@ For each student subfolder the runner:
 3.  Sends a single synchronous request to the configured endpoint (model configurable via `LLM_MODEL`, default `gpt-5.1`; `temperature = 0.1`; `response_format = json_object`).
 4.  Parses the reply with `jsonlite::fromJSON()`.
 
-Results are written to `R assignments/r_chat_lab{N}_grades_{model}.csv` (UTF-8, with separate `Q*_feedback` columns).
+Results are written to `R_assignments/r_chat_lab{N}_grades_{model}.csv` (UTF-8, with separate `Q*_feedback` columns).
 
 ------------------------------------------------------------------------
 
@@ -386,8 +401,11 @@ print(result["total"])
 
 for q, info in result["questions"].items():
     print(f"{q}: {info['grade']}  —  {info['feedback']}")
+    print(f"  OA met: {info['OutputAccuracy']['met']}  ({info['OutputAccuracy']['evidence']})")
 # → Q1: 5.0  —  Transition matrix correct; %^% operator used; output ≈ 0.75.
+# →   OA met: True  (Code structure produces a result ≈ 0.75 as expected.)
 # → Q2: 4.0  —  Stationary distribution correct; sum(pi) check missing.
+# →   OA met: True  (Stationary distribution values correct.)
 # ...
 
 print(result["overall_comment"])
@@ -503,7 +521,7 @@ Re-running the script **appends** new runs to existing CSVs with continuous run 
 {directory_path}/{folder_name}_grades_{model}.csv
 ```
 
-e.g. `R assignments/lab-9_student_high_grades_gpt-5.1.csv`
+e.g. `R_assignments/lab-9_student_high_grades_gpt-5.1.csv`
 
 Each CSV has columns: `Run`, `Total`, `OverallComment`, `Q1`–`QN`, `Q1_feedback`–`QN_feedback`.
 
@@ -513,7 +531,7 @@ Each CSV has columns: `Run`, `Total`, `OverallComment`, `Q1`–`QN`, `Q1_feedbac
 
 **Prerequisites:**
 
--   R per-student CSVs in `R assignments/` matching `lab-{N}_*_grades_*.csv`
+-   R per-student CSVs in `R_assignments/` matching `lab-{N}_*_grades_*.csv`
 -   Python per-student CSVs in `{BASE_LAB_DIR}/lab-{N}/` with matching names
 -   `BASE_LAB_DIR` environment variable set
 

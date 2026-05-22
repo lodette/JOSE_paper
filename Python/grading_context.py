@@ -86,6 +86,27 @@ def load_text(path) -> str:
     return path.read_text(encoding="utf-8")
 
 
+def instructions_version() -> str:
+    """Return the version tag from the grader instructions file, or ``""``
+    if no tag is present.
+
+    Looks for a line of the form ``# version: <tag>`` in
+    :data:`INSTRUCTIONS_PATH`.  Lines starting with ``#`` are treated as
+    comments and are stripped before the instructions are sent to the API
+    (see :func:`build_system_message`).  If no version line is found an
+    empty string is returned so that callers can use the value directly as
+    a filename suffix without special-casing.
+
+    :returns: The version tag string (e.g. ``"intervention-a"``), or ``""``
+        if no ``# version:`` line exists.
+    :rtype: str
+    """
+    for line in load_text(INSTRUCTIONS_PATH).splitlines():
+        if line.startswith("# version:"):
+            return line.split(":", 1)[1].strip()
+    return ""
+
+
 def build_system_message() -> dict:
     """Build the OpenAI system message containing the grader instructions.
 
@@ -99,7 +120,12 @@ def build_system_message() -> dict:
     :rtype: dict
     :raises FileNotFoundError: If :data:`INSTRUCTIONS_PATH` does not exist.
     """
-    instructions_text = load_text(INSTRUCTIONS_PATH)
+    # Strip comment lines (# ...) before sending — these carry metadata such
+    # as the version tag and must not be included in the prompt sent to the model.
+    raw = load_text(INSTRUCTIONS_PATH)
+    instructions_text = "\n".join(
+        line for line in raw.splitlines() if not line.startswith("#")
+    ).strip()
     # Qwen3 (and compatible models) run in thinking mode by default when served
     # locally.  Appending /no_think disables the reasoning chain so that the
     # response is returned directly in `content` rather than `reasoning_content`.

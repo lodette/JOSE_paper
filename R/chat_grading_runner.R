@@ -41,17 +41,25 @@ LLM_API_KEY  <- if (LLM_PROVIDER == "openai") {
 MODEL <- Sys.getenv("LLM_MODEL", unset = "gpt-5.1")
 
 # ---- paths ----
-RUBRIC_PATH       <- stringr::str_glue("./R assignments/lab_{LAB_NUMBER}_rubric.json")
-STARTER_PATH      <- stringr::str_glue("./R assignments/lab_{LAB_NUMBER}_starter.qmd")
-SOLUTION_PATH     <- stringr::str_glue("./R assignments/lab_{LAB_NUMBER}_solutions.qmd")
+RUBRIC_PATH       <- stringr::str_glue("./R_assignments/lab_{LAB_NUMBER}_rubric.json")
+STARTER_PATH      <- stringr::str_glue("./R_assignments/lab_{LAB_NUMBER}_starter.qmd")
+SOLUTION_PATH     <- stringr::str_glue("./R_assignments/lab_{LAB_NUMBER}_solutions.qmd")
 INSTRUCTIONS_PATH <- "./Python/grader_instructions.txt"
 
-directory_path <- paste0(getwd(), "/R assignments/lab-", LAB_NUMBER)
+directory_path <- paste0(getwd(), "/R_assignments/lab-", LAB_NUMBER)
 output_csv     <- stringr::str_glue("{directory_path}/r_chat_lab{LAB_NUMBER}_grades_{model_slug(MODEL)}.csv")
 
 Q_COLS          <- paste0("Q", seq_len(Q_COUNT))
 Q_FEEDBACK_COLS <- paste0("Q", seq_len(Q_COUNT), "_feedback")
-COL_ORDER       <- c("Student", "Total", "Model_Total", "OverallComment", Q_COLS, Q_FEEDBACK_COLS)
+CRIT_COLS       <- as.vector(outer(
+  paste0("Q", seq_len(Q_COUNT)),
+  c("CE_met", "CE_evidence", "PF_met", "PF_evidence", "OA_met", "OA_evidence"),
+  paste, sep = "_"
+))
+COL_ORDER       <- c("Student", "Total", "Model_Total", "OverallComment",
+                     Q_COLS, Q_FEEDBACK_COLS, CRIT_COLS)
+
+CRIT_MAP <- list(CE = "CodeExecution", PF = "ProcessFidelity", OA = "OutputAccuracy")
 
 # ---- helpers ----
 
@@ -88,12 +96,33 @@ chat_req <- function() {
 #' @seealso \code{\link{build_context_messages}}, \code{\link{grade_student}}
 build_system_message <- function() {
   if (!fs::file_exists(INSTRUCTIONS_PATH)) stop("Missing file: ", INSTRUCTIONS_PATH)
-  content <- readr::read_file(INSTRUCTIONS_PATH)
+  raw <- readr::read_file(INSTRUCTIONS_PATH)
+  # Strip comment lines (lines starting with "#") — these carry metadata such
+  # as the version tag and must not be included in the prompt sent to the model.
+  lines   <- strsplit(raw, "\n", fixed = TRUE)[[1]]
+  content <- paste(lines[!startsWith(lines, "#")], collapse = "\n") |> trimws()
   # Qwen3 (and compatible models) run in thinking mode by default when served
   # locally.  Appending /no_think disables the reasoning chain so that the
   # response is returned directly in `content` rather than `reasoning_content`.
   if (LLM_PROVIDER == "local") content <- paste0(content, "\n\n/no_think")
   list(role = "system", content = content)
+}
+
+#' Extract the version tag from the grader instructions file
+#'
+#' Looks for a line of the form \code{# version: <tag>} in
+#' \code{INSTRUCTIONS_PATH}.  Returns the tag string (e.g.
+#' \code{"intervention-a"}) or \code{""} if no version line is found,
+#' so callers can use the value directly as a filename suffix without
+#' special-casing.
+#'
+#' @returns A character string — the version tag, or \code{""}.
+instructions_version <- function() {
+  if (!fs::file_exists(INSTRUCTIONS_PATH)) return("")
+  lines <- strsplit(readr::read_file(INSTRUCTIONS_PATH), "\n", fixed = TRUE)[[1]]
+  tag_line <- lines[startsWith(lines, "# version:")]
+  if (length(tag_line) == 0) return("")
+  trimws(sub("^# version:", "", tag_line[1]))
 }
 
 #' Build the three shared context messages with ephemeral prompt caching
@@ -184,7 +213,7 @@ grade_student <- function(student_qmd_path) {
     model      = MODEL,
     messages   = messages,
     temperature = TEMPERATURE,
-    max_tokens  = 2048L
+    max_tokens  = 4096L
   )
   if (LLM_PROVIDER == "openai") {
     body$response_format <- list(type = "json_object")
@@ -267,6 +296,14 @@ main <- function() {
         r[[paste0(q, "_feedback")]] <- as.character(
           if (!is.null(qinfo[["feedback"]])) qinfo[["feedback"]] else ""
         )
+        for (short in names(CRIT_MAP)) {
+          full  <- CRIT_MAP[[short]]
+          cdata <- if (!is.null(qinfo[[full]])) qinfo[[full]] else list()
+          r[[paste0(q, "_", short, "_met")]]      <- cdata[["met"]]
+          r[[paste0(q, "_", short, "_evidence")]] <- as.character(
+            if (!is.null(cdata[["evidence"]])) cdata[["evidence"]] else ""
+          )
+        }
       }
       # Recompute Total from per-question grades (issue #11).
       r$Total <- sum(unlist(r[Q_COLS]), na.rm = TRUE)
@@ -281,6 +318,10 @@ main <- function() {
       for (q in Q_COLS) {
         r[[q]]                      <- NA_real_
         r[[paste0(q, "_feedback")]] <- NA_character_
+        for (short in names(CRIT_MAP)) {
+          r[[paste0(q, "_", short, "_met")]]      <- NA
+          r[[paste0(q, "_", short, "_evidence")]] <- NA_character_
+        }
       }
       r
     })

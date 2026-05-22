@@ -24,7 +24,13 @@ Q_SUM = sum(range(1, grading_context.Q_COUNT + 1))   # sum of per-question grade
 
 def _mock_grade_payload(total: int) -> dict:
     questions = {
-        f"Q{i}": {"grade": i, "feedback": f"Feedback for Q{i}"}
+        f"Q{i}": {
+            "CodeExecution":   {"met": True,  "evidence": f"CE evidence Q{i}."},
+            "ProcessFidelity": {"met": True,  "evidence": f"PF evidence Q{i}."},
+            "OutputAccuracy":  {"met": True,  "evidence": f"OA evidence Q{i}."},
+            "grade": i,
+            "feedback": f"Feedback for Q{i}",
+        }
         for i in range(1, grading_context.Q_COUNT + 1)
     }
     return {
@@ -88,7 +94,9 @@ def test_main_appends_runs_with_continuous_numbering(tmp_path, monkeypatch):
     reliability_test.main(n_runs=2, lab_number=9)
     reliability_test.main(n_runs=2, lab_number=9)
 
-    output_csv = base_dir / "lab-9" / f"lab-9_student_alpha_grades_{grading_context.model_slug()}.csv"
+    version = grading_context.instructions_version()
+    version_part = f"_{version}" if version else ""
+    output_csv = base_dir / "lab-9" / f"lab-9_student_alpha_grades_{grading_context.model_slug()}{version_part}.csv"
     with output_csv.open(newline="", encoding="utf-8") as f:
         rows = list(csv.DictReader(f))
 

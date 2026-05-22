@@ -58,8 +58,10 @@ Valid JSON is guaranteed at the API level by setting
 `response_format = list(type = "json_object")` on the run request, so no
 defensive multi-schema handling is needed. The reply is expected to
 conform to a single canonical schema: a `questions` object with keys
-`Q1`–`Q10`, each containing `grade` and `feedback` fields, plus a
-top-level `total` and `overall_comment`. Per-question grades and
+`Q1`–`Q10`, each containing `CodeExecution`, `ProcessFidelity`, and
+`OutputAccuracy` blocks (each with `met` and `evidence` fields), plus
+`grade` and `feedback` fields, and a top-level `total` and
+`overall_comment`. Per-question grades and
 feedback are assembled into a data frame alongside a computed total and
 concatenated comments column. The final results for all students are
 written to `r_lab{N}_grades_{model}.csv` with a UTF-8 BOM for Excel
@@ -76,7 +78,7 @@ step or server-side state is required.
 ### Context Delivery
 
 Grading materials (rubric JSON, starter `.qmd`, instructor solution
-`.qmd`) are read from `R assignments/` and inlined in every API call.
+`.qmd`) are read from `R_assignments/` and inlined in every API call.
 Each material is wrapped in a `role = "user"` message. When
 `LLM_PROVIDER` is `"openai"` (the default), each message is tagged with
 `cache_control = list(type = "ephemeral")`, matching the Python
@@ -95,9 +97,9 @@ parsed with `jsonlite::fromJSON()`.
 
 ### Batch Processing and Output
 
-`main()` walks `R assignments/` for student submission subfolders, calls
+`main()` walks `R_assignments/` for student submission subfolders, calls
 `grade_student()` for each, and writes results to
-`R assignments/r_chat_lab{N}_grades_{model}.csv` (UTF-8). Per-student exceptions
+`R_assignments/r_chat_lab{N}_grades_{model}.csv` (UTF-8). Per-student exceptions
 are caught and recorded as error rows; the batch continues regardless.
 Output columns match the Python pipeline: `Student`, `Total`,
 `OverallComment`, `Q1`–`QN`, `Q1_feedback`–`QN_feedback`.

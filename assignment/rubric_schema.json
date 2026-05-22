@@ -70,6 +70,10 @@
           "additionalProperties": {
             "type": "string"
           }
+        },
+        "OA_proxy": {
+          "type": "string",
+          "description": "Source-checkable proxy for OutputAccuracy. Describes a property of the code itself (function arguments, model formula, data inputs, column references, etc.) that the grader can verify without executing the code. Used when the expected output is a complex R object (model, tibble, plot) rather than a scalar. Empty string if not needed."
         }
       },
       "additionalProperties": {

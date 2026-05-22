@@ -41,7 +41,9 @@ request to the Chat Completions API using the model specified by `LLM_MODEL`
 `response_format={"type": "json_object"}` is set to enforce valid JSON output,
 and `temperature=0.1` is used to minimise grading variability. The response is
 parsed with `json.loads()` into a structured dictionary containing per-question
-grades and feedback, a total, and an overall comment.
+criterion blocks (`CodeExecution`, `ProcessFidelity`, `OutputAccuracy` — each
+with `met` and `evidence` fields), grades and feedback, a total, and an overall
+comment.
 
 ## Batch Processing and Output
 
@@ -55,5 +57,8 @@ or unexpected response for one student writes an error row to the output and
 allows the batch to continue. Results are flattened into rows and written to a
 UTF-8 CSV file (`lab{N}_grades_{model}.csv`) with columns for the student ID,
 per-question grades (`Q1`–`Q10`) and feedback, a total, and an overall comment.
+The per-criterion `met`/`evidence` fields are present in the raw API response
+but are not written to the CSV; use `summarize_criterion_coverage.py` to
+analyse criterion coverage directly from graded output.
 Because each student is graded in an independent, stateless API call, the batch
 can be resumed or rerun without any server-side cleanup.

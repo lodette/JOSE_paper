@@ -20,7 +20,7 @@ librarian::shelf(readr, fs, stringr)
 if (file.exists(".env")) dotenv::load_dot_env()
 
 # ---- directories ----
-r_dir        <- paste0(getwd(), "/R assignments/lab-", LAB_NUMBER)
+r_dir        <- paste0(getwd(), "/R_assignments/lab-", LAB_NUMBER)
 
 base_lab_dir <- Sys.getenv("BASE_LAB_DIR", unset = NA_character_)
 if (is.na(base_lab_dir) || !nzchar(base_lab_dir)) {

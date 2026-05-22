@@ -29,8 +29,8 @@ source("./R/utils.R")
 # -------------------
 # Config
 # -------------------
-CONFIG_JSON    <- "./R assignments/assistant_config.json"
-directory_path <- paste0(getwd(), "/R assignments/lab-", LAB_NUMBER)
+CONFIG_JSON    <- "./R_assignments/assistant_config.json"
+directory_path <- paste0(getwd(), "/R_assignments/lab-", LAB_NUMBER)
 output_csv     <- stringr::str_glue("{directory_path}/r_lab{LAB_NUMBER}_grades_{model_slug(MODEL)}.csv")
 
 # -------------------

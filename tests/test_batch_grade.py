@@ -25,7 +25,13 @@ Q_SUM = sum(range(1, grading_context.Q_COUNT + 1))   # sum of per-question grade
 
 def _mock_grade_payload(total: int) -> dict:
     questions = {
-        f"Q{i}": {"grade": i, "feedback": f"Feedback for Q{i}"}
+        f"Q{i}": {
+            "CodeExecution":   {"met": True,  "evidence": f"CE evidence Q{i}."},
+            "ProcessFidelity": {"met": True,  "evidence": f"PF evidence Q{i}."},
+            "OutputAccuracy":  {"met": True,  "evidence": f"OA evidence Q{i}."},
+            "grade": i,
+            "feedback": f"Feedback for Q{i}",
+        }
         for i in range(1, grading_context.Q_COUNT + 1)
     }
     return {

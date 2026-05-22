@@ -8,7 +8,7 @@
 #
 # Output files are written beside the student submission folders:
 #   {directory_path}/{folder_name}_grades.csv
-# e.g. "R assignments/lab-9_student_high_grades.csv"
+# e.g. "R_assignments/lab-9_student_high_grades.csv"
 #
 # Usage:
 #   N <- 10          # set number of runs per invocation (default 10)
@@ -37,16 +37,24 @@ runner_env            <- new.env(parent = globalenv())
 runner_env$LAB_NUMBER <- LAB_NUMBER
 sys.source("R/chat_grading_runner.R", envir = runner_env)
 
-grade_student <- runner_env$grade_student
+grade_student        <- runner_env$grade_student
+instructions_version <- runner_env$instructions_version
 
 # ---- paths and column layout ----
 directory_path  <- runner_env$directory_path
 MODEL           <- runner_env$MODEL
+CRIT_MAP        <- runner_env$CRIT_MAP
 
 Q_COUNT         <- runner_env$Q_COUNT
 Q_COLS          <- paste0("Q", seq_len(Q_COUNT))
 Q_FEEDBACK_COLS <- paste0("Q", seq_len(Q_COUNT), "_feedback")
-COL_ORDER       <- c("Run", "Total", "Model_Total", "OverallComment", Q_COLS, Q_FEEDBACK_COLS)
+CRIT_COLS       <- as.vector(outer(
+  paste0("Q", seq_len(Q_COUNT)),
+  c("CE_met", "CE_evidence", "PF_met", "PF_evidence", "OA_met", "OA_evidence"),
+  paste, sep = "_"
+))
+COL_ORDER       <- c("Run", "Total", "Model_Total", "OverallComment",
+                     Q_COLS, Q_FEEDBACK_COLS, CRIT_COLS)
 
 # ---- helpers ----
 
@@ -92,6 +100,14 @@ grade_n_times <- function(student_file, student_name, n_runs, run_offset = 0L) {
         r[[paste0(q, "_feedback")]] <- as.character(
           if (!is.null(qinfo[["feedback"]])) qinfo[["feedback"]] else ""
         )
+        for (short in names(CRIT_MAP)) {
+          full  <- CRIT_MAP[[short]]
+          cdata <- if (!is.null(qinfo[[full]])) qinfo[[full]] else list()
+          r[[paste0(q, "_", short, "_met")]]      <- cdata[["met"]]
+          r[[paste0(q, "_", short, "_evidence")]] <- as.character(
+            if (!is.null(cdata[["evidence"]])) cdata[["evidence"]] else ""
+          )
+        }
       }
       # Recompute Total from per-question grades (issue #11).
       r$Total <- sum(unlist(r[Q_COLS]), na.rm = TRUE)
@@ -106,6 +122,10 @@ grade_n_times <- function(student_file, student_name, n_runs, run_offset = 0L) {
       for (q in Q_COLS) {
         r[[q]]                      <- NA_real_
         r[[paste0(q, "_feedback")]] <- NA_character_
+        for (short in names(CRIT_MAP)) {
+          r[[paste0(q, "_", short, "_met")]]      <- NA
+          r[[paste0(q, "_", short, "_evidence")]] <- NA_character_
+        }
       }
       r
     })
@@ -159,9 +179,11 @@ main <- function() {
       folder_name,
       stringr::str_glue("(?i)^lab-{LAB_NUMBER}_")
     )
+    version      <- instructions_version()
+    version_part <- if (nzchar(version)) paste0("_", version) else ""
     output_csv   <- file.path(directory_path,
                               paste0(folder_name, "_grades_",
-                                     model_slug(MODEL), ".csv"))
+                                     model_slug(MODEL), version_part, ".csv"))
 
     # Detect existing runs so new ones continue from the last run number
     if (file.exists(output_csv)) {

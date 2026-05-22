@@ -30,7 +30,15 @@ from grade_student import grade_student_qmd
 
 Q_COLS          = [f"Q{i}" for i in range(1, grading_context.Q_COUNT + 1)]
 Q_FEEDBACK_COLS = [f"Q{i}_feedback" for i in range(1, grading_context.Q_COUNT + 1)]
-FIELDNAMES      = ["Run", "Total", "Model_Total", "OverallComment"] + Q_COLS + Q_FEEDBACK_COLS
+CRIT_COLS       = [
+    f"Q{i}_{c}_{k}"
+    for i in range(1, grading_context.Q_COUNT + 1)
+    for c in ("CE", "PF", "OA")
+    for k in ("met", "evidence")
+]
+FIELDNAMES      = ["Run", "Total", "Model_Total", "OverallComment"] + Q_COLS + Q_FEEDBACK_COLS + CRIT_COLS
+
+_CRIT_MAP = {"CE": "CodeExecution", "PF": "ProcessFidelity", "OA": "OutputAccuracy"}
 
 
 # ---------------------------------------------------------------------------
@@ -96,6 +104,10 @@ def grade_n_times(student_path: Path, n_runs: int, run_offset: int) -> list[dict
                 qinfo         = questions.get(q, {})
                 row[q]        = qinfo.get("grade")
                 row[f"{q}_feedback"] = qinfo.get("feedback")
+                for short, full in _CRIT_MAP.items():
+                    cdata = qinfo.get(full, {})
+                    row[f"{q}_{short}_met"]      = cdata.get("met")
+                    row[f"{q}_{short}_evidence"] = cdata.get("evidence", "")
 
             # Recompute Total from per-question grades (issue #11).
             row["Total"] = sum(row[q] for q in Q_COLS if isinstance(row[q], (int, float)))
@@ -107,6 +119,9 @@ def grade_n_times(student_path: Path, n_runs: int, run_offset: int) -> list[dict
             for q in Q_COLS:
                 row[q]               = None
                 row[f"{q}_feedback"] = None
+                for short in ("CE", "PF", "OA"):
+                    row[f"{q}_{short}_met"]      = None
+                    row[f"{q}_{short}_evidence"] = None
 
         rows.append(row)
     return rows
@@ -145,8 +160,10 @@ def main(n_runs: int = 10, lab_number: int = 9) -> None:
           f"{len(student_paths)} students\n")
 
     for path in student_paths:
-        folder_name = path.parent.name          # e.g. "lab-9_student_high"
-        output_csv  = base_dir / f"{folder_name}_grades_{grading_context.model_slug()}.csv"
+        folder_name   = path.parent.name          # e.g. "lab-9_student_high"
+        version       = grading_context.instructions_version()
+        version_part  = f"_{version}" if version else ""
+        output_csv    = base_dir / f"{folder_name}_grades_{grading_context.model_slug()}{version_part}.csv"
 
         run_offset  = _get_run_offset(output_csv)
         start, end  = run_offset + 1, run_offset + n_runs

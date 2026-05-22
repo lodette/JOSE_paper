@@ -37,7 +37,13 @@ def main(lab_number: int) -> None:
 
     q_cols          = [f"Q{i}" for i in range(1, q_count + 1)]
     q_feedback_cols = [f"Q{i}_feedback" for i in range(1, q_count + 1)]
-    fieldnames      = ["Student", "Total", "Model_Total", "OverallComment"] + q_cols + q_feedback_cols
+    crit_cols       = [
+        f"Q{i}_{c}_{k}"
+        for i in range(1, q_count + 1)
+        for c in ("CE", "PF", "OA")
+        for k in ("met", "evidence")
+    ]
+    fieldnames      = ["Student", "Total", "Model_Total", "OverallComment"] + q_cols + q_feedback_cols + crit_cols
 
     rows = []
 
@@ -57,10 +63,15 @@ def main(lab_number: int) -> None:
                 "OverallComment": result.get("overall_comment", ""),
                 "Model_Total":    result.get("total"),
             }
+            _CRIT_MAP = {"CE": "CodeExecution", "PF": "ProcessFidelity", "OA": "OutputAccuracy"}
             for q in q_cols:
                 qinfo             = questions.get(q, {})
                 row[q]            = qinfo.get("grade")
                 row[f"{q}_feedback"] = qinfo.get("feedback")
+                for short, full in _CRIT_MAP.items():
+                    cdata = qinfo.get(full, {})
+                    row[f"{q}_{short}_met"]      = cdata.get("met")
+                    row[f"{q}_{short}_evidence"] = cdata.get("evidence", "")
 
             # Recompute Total from per-question grades rather than trusting the
             # model-returned total, which can drift (see issue #11).
@@ -73,6 +84,9 @@ def main(lab_number: int) -> None:
             for q in q_cols:
                 row[q]               = None
                 row[f"{q}_feedback"] = None
+                for short in ("CE", "PF", "OA"):
+                    row[f"{q}_{short}_met"]      = None
+                    row[f"{q}_{short}_evidence"] = None
 
         rows.append(row)
 
