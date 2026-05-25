@@ -18,7 +18,7 @@ affiliations:
     index: 1
   - name: University of Windsor School of Business, Sessional Instructor
     index: 2
-date: 23 April 2026
+date: 27 May 2026
 bibliography: paper.bib
 ---
 
