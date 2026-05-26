@@ -54,7 +54,7 @@ All pipelines accept assignments containing any mix of programming questions, op
 │   ├── summarize_criterion_coverage.py  # Direct criterion coverage summary (Intervention B+)
 │   └── grader_instructions.txt          # System prompt passed to the LLM
 │
-├── Claude/
+├── Python/anthropic/
 │   ├── grading_context.py               # Config, Anthropic system blocks, tool schema
 │   ├── grade_student.py                 # Grade a single student submission via Messages API
 │   ├── batch_grade.py                   # Entry point: walk folders, grade all, write CSV
@@ -220,7 +220,7 @@ The rubric exercises (`Ex1`, `Ex2`, …) map to question columns (`Q1`, `Q2`, �
 
 ### 5.3 Grader instructions
 
-`Python/grader_instructions.txt` is the system prompt used by both the **Python** and **R Chat Completions** pipelines. `Claude/grader_instructions.txt` is the system prompt used by the **Claude** pipeline; the two files are nearly identical, differing only in how structured output is requested (JSON object vs `submit_grade` tool call). Both instruct the model to grade based on the `.qmd` source only (not assumed execution output), to assess each sub-criterion independently before assigning a grade, and to produce `met`/`evidence` blocks for each of `CodeExecution`, `ProcessFidelity`, and `OutputAccuracy`. When the rubric exercise includes a non-empty `OA_proxy` field, the grader uses it as the primary basis for the OutputAccuracy assessment.
+`Python/grader_instructions.txt` is the system prompt used by both the **Python** and **R Chat Completions** pipelines. `Python/anthropic/grader_instructions.txt` is the system prompt used by the **Claude** pipeline; the two files are nearly identical, differing only in how structured output is requested (JSON object vs `submit_grade` tool call). Both instruct the model to grade based on the `.qmd` source only (not assumed execution output), to assess each sub-criterion independently before assigning a grade, and to produce `met`/`evidence` blocks for each of `CodeExecution`, `ProcessFidelity`, and `OutputAccuracy`. When the rubric exercise includes a non-empty `OA_proxy` field, the grader uses it as the primary basis for the OutputAccuracy assessment.
 
 The expected JSON output structure is:
 
@@ -411,13 +411,13 @@ The Claude pipeline requires no setup phase. It mirrors the Python pipeline in s
 
 ### 8.1 Configuration
 
-`ANTHROPIC_API_KEY` must be set in `.env`. The model is hardcoded as `claude-opus-4-7` in `Claude/grading_context.py`; sampling temperature parameters are not set (they are rejected by this model). Grading consistency is delegated to the rubric prompt, the cached shared context, and the schema-constrained tool call.
+`ANTHROPIC_API_KEY` must be set in `.env`. The model is hardcoded as `claude-opus-4-7` in `Python/anthropic/grading_context.py`; sampling temperature parameters are not set (they are rejected by this model). Grading consistency is delegated to the rubric prompt, the cached shared context, and the schema-constrained tool call.
 
 ### 8.2 Run
 
 ``` bash
-python Claude/batch_grade.py --lab-number 9
-python Claude/batch_grade.py -n 4            # short form
+python Python/anthropic/batch_grade.py --lab-number 9
+python Python/anthropic/batch_grade.py -n 4            # short form
 ```
 
 `BASE_LAB_DIR` must be set in `.env`.

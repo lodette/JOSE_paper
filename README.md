@@ -37,7 +37,7 @@ Solution .qmd ─┘
 │   ├── summarize_criterion_coverage.py   # Python: criterion coverage summary from graded output
 │   └── grader_instructions.txt           # Python: system prompt for the LLM grader
 │
-├── Claude/
+├── Python/anthropic/
 │   ├── batch_grade.py                    # Claude: entry point — grades all students
 │   ├── grade_student.py                  # Claude: grades a single student .qmd
 │   ├── grading_context.py                # Claude: loads rubric, templates, builds API messages
@@ -208,9 +208,9 @@ pip install anthropic python-dotenv
 ### Usage
 
 ``` bash
-python Claude/batch_grade.py                  # default lab (9)
-python Claude/batch_grade.py --lab-number 4   # grade lab 4
-python Claude/batch_grade.py -n 4             # short form
+python Python/anthropic/batch_grade.py                  # default lab (9)
+python Python/anthropic/batch_grade.py --lab-number 4   # grade lab 4
+python Python/anthropic/batch_grade.py -n 4             # short form
 ```
 
 This will:
@@ -391,7 +391,7 @@ main()
 | **Output parsing** | `json.loads()` | Tool-call `input` (pre-validated dict) | `jsonlite::fromJSON()` | `jsonlite::fromJSON()` |
 | **Temperature** | `0.1` | n/a (not accepted by `claude-opus-4-7`) | `0.1` | `0.1` |
 | **Model** | configurable via `LLM_MODEL` (default `gpt-5.1`) | `claude-opus-4-7` | configurable via `LLM_MODEL` (default `gpt-5.1`) | configurable via `LLM_MODEL` (default `gpt-5.1`) |
-| **Scripts** | 3 modules in `Python/` | 3 modules in `Claude/` | `chat_grading_runner.R`, `utils.R` | `oaii_grading_assistant.R`, `oaii_grading_assistant_runner.R` |
+| **Scripts** | 3 modules in `Python/` | 3 modules in `Python/anthropic/` | `chat_grading_runner.R`, `utils.R` | `oaii_grading_assistant.R`, `oaii_grading_assistant_runner.R` |
 | **CSV encoding** | UTF-8 | UTF-8 | UTF-8 | UTF-8 BOM (Excel compatible) |
 | **Feedback columns** | Separate `Q1_feedback` … `QN_feedback` | Separate `Q1_feedback` … `QN_feedback` | Separate `Q1_feedback` … `QN_feedback` | Single concatenated `Comments` column |
 
@@ -426,7 +426,7 @@ Each rubric file (`lab_<N>_rubric.json`) follows this schema:
 
 ## Grader Instructions
 
-`Python/grader_instructions.txt` is used by the **Python** pipeline as the LLM system prompt and `Claude/grader_instructions.txt` is used by the **Claude** pipeline (the two files are nearly identical, differing only in how structured output is requested — JSON object vs `submit_grade` tool call).
+`Python/grader_instructions.txt` is used by the **Python** pipeline as the LLM system prompt and `Python/anthropic/grader_instructions.txt` is used by the **Claude** pipeline (the two files are nearly identical, differing only in how structured output is requested — JSON object vs `submit_grade` tool call).
 They instruct the model to:
 
 - Grade only what appears in the student's `.qmd` source (not assumed execution output).
@@ -454,7 +454,7 @@ python Python/batch_grade.py --lab-number 10
 **Claude** — pass the lab number as a command-line argument:
 
 ``` bash
-python Claude/batch_grade.py --lab-number 10
+python Python/anthropic/batch_grade.py --lab-number 10
 ```
 
 **R** — set `LAB_NUMBER` before sourcing the script:

@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 # Single authoritative load of .env — all other modules import from here
 load_dotenv()
 
-BASE_DIR = Path(__file__).parent   # Claude/ directory
+BASE_DIR = Path(__file__).parent   # Python/anthropic/ directory
 
 BASE_LAB_DIR = os.getenv("BASE_LAB_DIR")
 if BASE_LAB_DIR is None:
