@@ -1,5 +1,5 @@
 ---
-title: "lab 9 - Monte Carlo Methods"
+title: "lab 9"
 author: "student_mid"
 format: html
 editor: visual
@@ -9,28 +9,6 @@ self-contained: true
 ## Introduction
 
 In today's lab, you'll practice sampling from distributions and working with Markov chains.
-
-## Getting started
-
--   To complete the lab, log on to **your** github account and then go to the class [GitHub organization](https://github.com/bsmm-8740-fall-2025) and find the **2025-lab-9-\[your github username\]** repository .
-
-    Create an R project using your **2025-lab-9-\[your github username\]** repository (remember to create a PAT, etc.) and add your answers by editing the `2025-lab-9.qmd` file in your repository.
-
--   When you are done, be sure to: **save** your document, **stage**, **commit** and [**push**]{.underline} your work.
-
-::: callout-important
-To access Github from the lab, you will need to make sure you are logged in as follows:
-
--   username: **.\\daladmin**
--   password: **Business507!**
-
-Remember to (create a PAT and set your git credentials)
-
--   create your PAT using `usethis::create_github_token()` ,
--   store your PAT with `gitcreds::gitcreds_set()` ,
--   set your username and email with
-    -   `usethis::use_git_config( user.name = ___, user.email = ___)`
-:::
 
 ## Packages
 
@@ -54,17 +32,17 @@ Here is a four-state Markov chain that could model customer loyalty for a subscr
 
 [**States**]{.underline}:
 
--   State A (New Customer): The customer has just signed up.
--   State B (Engaged Customer): The customer is actively using the service and seems satisfied.
--   State C (At-Risk Customer): The customer is showing signs of disengagement (e.g., reduced usage or negative feedback).
--   State D (Churned Customer): The customer has canceled their subscription.
+- State A (New Customer): The customer has just signed up.
+- State B (Engaged Customer): The customer is actively using the service and seems satisfied.
+- State C (At-Risk Customer): The customer is showing signs of disengagement (e.g., reduced usage or negative feedback).
+- State D (Churned Customer): The customer has canceled their subscription.
 
 [**Transition Probabilities**]{.underline}:
 
--   From State A (New Customer), there’s a high chance the customer either becomes engaged (State B) or starts showing signs of disengagement (State C).
--   From State B (Engaged Customer), there’s a probability of remaining engaged or transitioning to at-risk (State C), and a smaller probability of churning (State D).
--   From State C (At-Risk Customer), the customer may either re-engage (return to State B) or churn (State D).
--   From State D (Churned Customer), it's possible the company might re-acquire the customer through marketing efforts, which would move them back to State A.
+- From State A (New Customer), there’s a high chance the customer either becomes engaged (State B) or starts showing signs of disengagement (State C).
+- From State B (Engaged Customer), there’s a probability of remaining engaged or transitioning to at-risk (State C), and a smaller probability of churning (State D).
+- From State C (At-Risk Customer), the customer may either re-engage (return to State B) or churn (State D).
+- From State D (Churned Customer), it's possible the company might re-acquire the customer through marketing efforts, which would move them back to State A.
 
 This type of Markov model can help businesses predict customer behavior, optimize marketing efforts, and focus on retention strategies.
 
@@ -110,8 +88,8 @@ The probability that a customer that has just signed up is still a customer afte
 
 A simpler customer churn model for each monthly period is as follows:
 
--   a current subscriber cancels their subscription with probability 0.2
--   a current non-subscriber starts their subscription with probability with probability 0.06
+- a current subscriber cancels their subscription with probability 0.2
+- a current non-subscriber starts their subscription with probability with probability 0.06
 
 write the state transition matrix $\mathsf{P}_{i,j}$, and compute the [**stationary distribution**]{.underline} $\pi$ for this Markov Chain, confirming that $\pi\mathsf{P}=\pi$ and that the sum of the elements of $\pi$ equals $1.0$.
 
@@ -188,20 +166,17 @@ We want to sample from the Poisson distribution $\mathbb{P}(X=x)\sim \lambda^xe^
 
 For the proposal we toss a fair coin and add or subtract 1 from $x$ to obtain $y$ as follows:
 
-$$
-q(y|x)=\begin{cases}
+$$q(y|x)=\begin{cases}
 \frac{1}{2} & x\ge1,\,y=x\pm1\\
 1 & x=0,\,y=1\\
 0 & \mathrm{otherwise}
-\end{cases}
-$$ show that the acceptance probability is
+\end{cases}$$
+show that the acceptance probability is
 
-$$
-\alpha(y|x)=\begin{cases}
+$$\alpha(y|x)=\begin{cases}
 \min\left(1,\frac{\lambda}{x+1}\right) & x\ge1,\,y=x+1\\
 \min\left(1,\frac{x}{\lambda}\right) & x\ge2,\,y=x-1
-\end{cases}
-$$
+\end{cases}$$
 
 and $\alpha(1|0)=\min(1,\lambda/2)$, $\alpha(0|1)=\min(1,2/\lambda)$. NOTE: there are 4 cases to consider.
 
@@ -484,9 +459,7 @@ round(v20[4] * 100, 4)
 
 Given $\bar{a}\equiv\frac{1}{T}\sum_{t=1}^T a_t$ (the mean) and sequences $\left\{a_t\right\}_{t=1}^T$ and $\left\{b_t\right\}_{t=1}^T$, we have the following calculation for the population covariance:
 
-$$
-\frac{1}{T}\sum_{t=1}^T(a_t-\bar{a})(b_t-\bar{b})
-$$
+$$\frac{1}{T}\sum_{t=1}^T(a_t-\bar{a})(b_t-\bar{b})$$
 
 Statisticians have long interpreted this as a measure of how much the measurements $a_t$ and $b_t$ co-vary. If $a_t=b_t$ then this formula calculates the population variance of $a_t$, a measure of the dispersion or spread of the values of $a_t$.
 

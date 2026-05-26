@@ -1,5 +1,5 @@
 ---
-title: "Lab 4 - The TidyModels Package"
+title: "Lab 4"
 author: student_j
 format: html
 editor: visual
@@ -15,7 +15,7 @@ In today's lab, you'll practice building `workflowsets` with `recipes`, `parsnip
 
 By the end of the lab you will...
 
--   Be able to build workflows to evaluate different models and feature sets.
+- Be able to build workflows to evaluate different models and feature sets.
 
 ## Packages
 
@@ -104,10 +104,10 @@ ames_test  <- rsample::testing(data_split)
 
 create a recipe based on the formula **Sale_Price \~ Longitude + Latitude + Lot_Area + Neighborhood + Year_Sold** with the following steps:
 
--   transform the variable `Sale_Price` to `log(Sale_Price)`
--   center and scale all predictors
--   create dummy variables for all nominal variables
--   transform the variable `Neighborhood` to pool infrequent values (see `recipes::step_other`)
+- transform the variable `Sale_Price` to `log(Sale_Price)`
+- center and scale all predictors
+- create dummy variables for all nominal variables
+- transform the variable `Neighborhood` to pool infrequent values (see `recipes::step_other`)
 
 Think carefully about the order of the steps in your recipe.
 
@@ -135,11 +135,11 @@ recipes::prep(norm_recipe) %>% broom::tidy()
 
 Create three regression models
 
--   a base regression model using `lm`
+- a base regression model using `lm`
 
--   a regression model using `glmnet`; set the model parameters `penalty` and `mixture` for tuning
+- a regression model using `glmnet`; set the model parameters `penalty` and `mixture` for tuning
 
--   a tree model using the `ranger` engine; set the model parameters `min_n` and `trees` for tuning
+- a tree model using the `ranger` engine; set the model parameters `min_n` and `trees` for tuning
 
 ::: {#Q4 .callout-note appearance="simple" icon="false"}
 ## YOUR ANSWER Q4:

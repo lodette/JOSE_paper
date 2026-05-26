@@ -1,5 +1,5 @@
 ---
-title: "Lab 4 - The TidyModels Package"
+title: "Lab 4"
 author: "Add your name here"
 format: html
 editor: visual
@@ -15,7 +15,7 @@ In today's lab, you'll practice building `workflowsets` with `recipes`, `parsnip
 
 By the end of the lab you will...
 
--   Be able to build workflows to evaluate different models and feature sets.
+- Be able to build workflows to evaluate different models and feature sets.
 
 ## Packages
 
@@ -34,14 +34,6 @@ librarian::shelf(
 # set the efault theme for plotting
 theme_set(theme_bw(base_size = 18) + theme(legend.position = "top"))
 ```
-
-::: callout-warning
-## Package installs
-
-If you install packages outside of the ones here, [**remove**]{.underline} your `install.packages(.)` code [**before submitting your solutions**]{.underline}.
-
-Leaving instructions that will install packages may cause your code to fail, but more importantly, it can corrupt the TA/instructor's system.
-:::
 
 ## The Data
 
@@ -100,10 +92,10 @@ ames_test  <- rsample::__
 
 create a recipe based on the formula **Sale_Price \~ Longitude + Latitude + Lot_Area + Neighborhood + Year_Sold** with the following steps:
 
--   transform the variable `Sale_Price` to `log(Sale_Price)`
--   center and scale all predictors
--   create dummy variables for all nominal variables
--   transform the variable `Neighborhood` to pool infrequent values (see `recipes::step_other`)
+- transform the variable `Sale_Price` to `log(Sale_Price)`
+- center and scale all predictors
+- create dummy variables for all nominal variables
+- transform the variable `Neighborhood` to pool infrequent values (see `recipes::step_other`)
 
 Finally prep the recipe.
 
@@ -124,11 +116,11 @@ norm_recipe <-
 
 Create three regression models
 
--   a base regression model using `lm`
+- a base regression model using `lm`
 
--   a regression model using `glmnet`; set the model parameters `penalty` and `mixture` for tuning
+- a regression model using `glmnet`; set the model parameters `penalty` and `mixture` for tuning
 
--   a tree model using the `ranger` engine; set the model parameters `min_n` and `trees` for tuning
+- a tree model using the `ranger` engine; set the model parameters `min_n` and `trees` for tuning
 
 ::: {.callout-note appearance="simple" icon="false"}
 ## YOUR ANSWER:

@@ -1,5 +1,5 @@
 ---
-title: "Lab 9 - Monte Carlo Methods"
+title: "Lab 9"
 subtitle: "SOLUTIONS"
 editor: visual
 format: html
@@ -34,17 +34,17 @@ Here is a four-state Markov chain that could model customer loyalty for a subscr
 
 [**States**]{.underline}:
 
--   State A (New Customer): The customer has just signed up.
--   State B (Engaged Customer): The customer is actively using the service and seems satisfied.
--   State C (At-Risk Customer): The customer is showing signs of disengagement (e.g., reduced usage or negative feedback).
--   State D (Churned Customer): The customer has canceled their subscription.
+- State A (New Customer): The customer has just signed up.
+- State B (Engaged Customer): The customer is actively using the service and seems satisfied.
+- State C (At-Risk Customer): The customer is showing signs of disengagement (e.g., reduced usage or negative feedback).
+- State D (Churned Customer): The customer has canceled their subscription.
 
 [**Transition Probabilities**]{.underline}:
 
--   From State A (New Customer), there’s a high chance the customer either becomes engaged (State B) or starts showing signs of disengagement (State C).
--   From State B (Engaged Customer), there’s a probability of remaining engaged or transitioning to at-risk (State C), and a smaller probability of churning (State D).
--   From State C (At-Risk Customer), the customer may either re-engage (return to State B) or churn (State D).
--   From State D (Churned Customer), it's possible the company might re-acquire the customer through marketing efforts, which would move them back to State A.
+- From State A (New Customer), there’s a high chance the customer either becomes engaged (State B) or starts showing signs of disengagement (State C).
+- From State B (Engaged Customer), there’s a probability of remaining engaged or transitioning to at-risk (State C), and a smaller probability of churning (State D).
+- From State C (At-Risk Customer), the customer may either re-engage (return to State B) or churn (State D).
+- From State D (Churned Customer), it's possible the company might re-acquire the customer through marketing efforts, which would move them back to State A.
 
 This type of Markov model can help businesses predict customer behavior, optimize marketing efforts, and focus on retention strategies.
 
@@ -82,8 +82,8 @@ The probability that a customer that has just signed up is still a customer afte
 
 A simpler customer churn model for each monthly period is as follows:
 
--   a current subscriber cancels their subscription with probability 0.2
--   a current non-subscriber starts their subscription with probability with probability 0.06
+- a current subscriber cancels their subscription with probability 0.2
+- a current non-subscriber starts their subscription with probability with probability 0.06
 
 write the state transition matrix $\mathsf{P}_{i,j}$, and compute the stationary distribution $\pi$ for this Markov Chain, confirming that $\pi\mathsf{P}=\pi$ and that the sum of the elements of $\pi$ equals $1.0$.
 
@@ -133,20 +133,17 @@ We want to sample from the Poisson distribution $\mathbb{P}(X=x)\sim \lambda^xe^
 
 For the proposal we toss a fair coin and add or subtract 1 from $x$ to obtain $y$ as follows:
 
-$$
-q(y|x)=\begin{cases}
+$$q(y|x)=\begin{cases}
 \frac{1}{2} & x\ge1,\,y=x\pm1\\
 1 & x=0,\,y=1\\
 0 & \mathrm{otherwise}
-\end{cases}
-$$ show that the acceptance probability is
+\end{cases}$$
+show that the acceptance probability is
 
-$$
-\alpha(y|x)=\begin{cases}
+$$\alpha(y|x)=\begin{cases}
 \min\left(1,\frac{\lambda}{x+1}\right) & x\ge1,\,y=x+1\\
 \min\left(1,\frac{x}{\lambda}\right) & x\ge2,\,y=x-1
-\end{cases}
-$$
+\end{cases}$$
 
 and $\alpha(1|0)=\min(1,\lambda/2)$, $\alpha(0|1)=\min(1,2/\lambda)$. NOTE: there are 4 cases to consider.
 
@@ -157,27 +154,19 @@ For the MH algorithm, the acceptance probability is $\alpha(X_{n+1}\vert X_n)=\m
 
 case 1: for $x\ge1, y=x+1$, then
 
-$$
-\alpha(x+1\vert x)=\frac{\lambda^{x+1}e^{-\lambda}/(x+1)!}{\lambda^{x}e^{-\lambda}/(x)!}\frac{1/2}{1/2}=\frac{\lambda}{x+1}
-$$
+$$\alpha(x+1\vert x)=\frac{\lambda^{x+1}e^{-\lambda}/(x+1)!}{\lambda^{x}e^{-\lambda}/(x)!}\frac{1/2}{1/2}=\frac{\lambda}{x+1}$$
 
 case 2: for $x\ge2, y=x-1$, then
 
-$$
-\alpha(x-1\vert x)=\frac{\lambda^{x-1}e^{-\lambda}/(x-1)!}{\lambda^{x}e^{-\lambda}/(x)!}\frac{1/2}{1/2}=\frac{x}{\lambda}
-$$
+$$\alpha(x-1\vert x)=\frac{\lambda^{x-1}e^{-\lambda}/(x-1)!}{\lambda^{x}e^{-\lambda}/(x)!}\frac{1/2}{1/2}=\frac{x}{\lambda}$$
 
 case 3: for $x=0, y=1$, then
 
-$$
-\alpha(1\vert 0)=\frac{\lambda^{1}e^{-\lambda}/(1)!}{\lambda^{0}e^{-\lambda}/(0)!}\frac{1/2}{1}=\frac{\lambda}{2}
-$$
+$$\alpha(1\vert 0)=\frac{\lambda^{1}e^{-\lambda}/(1)!}{\lambda^{0}e^{-\lambda}/(0)!}\frac{1/2}{1}=\frac{\lambda}{2}$$
 
 case 4: for $x=1, y=0$, then
 
-$$
-\alpha(0\vert 1)=\frac{\lambda^{0}e^{-\lambda}/(0)!}{\lambda^{1}e^{-\lambda}/(1)!}\frac{1}{1/2}=\frac{2}{\lambda}
-$$
+$$\alpha(0\vert 1)=\frac{\lambda^{0}e^{-\lambda}/(0)!}{\lambda^{1}e^{-\lambda}/(1)!}\frac{1}{1/2}=\frac{2}{\lambda}$$
 :::
 
 ## Exercise 4: Samples from Poisson pmf
@@ -307,9 +296,7 @@ c(0, 1, 0, 0) %*% (P %^% 20)
 
 Given $\bar{a}\equiv\frac{1}{T}\sum_{t=1}^T a_t$ (the mean) and sequences $\left\{a_t\right\}_{t=1}^T$ and $\left\{b_t\right\}_{t=1}^T$, we have the following calculation for the population covariance:
 
-$$
-\frac{1}{T}\sum_{t=1}^T(a_t-\bar{a})(b_t-\bar{b})
-$$
+$$\frac{1}{T}\sum_{t=1}^T(a_t-\bar{a})(b_t-\bar{b})$$
 
 Statisticians have long interpreted this as a measure of how much the measurements $a_t$ and $b_t$ co-vary. If $a_t=b_t$ then this formula calculates the population variance of $a_t$, a measure of the dispersion or spread of the values of $a_t$.
 
@@ -364,8 +351,7 @@ tibble::tibble(
 
 The calculations are identical, i.e.
 
-$$\frac{1}{T}\sum_{t=1}^T(a_t-\bar{a})(b_t-\bar{b})= \frac{1}{T^2}\sum_{k=1}^{T-1}\sum_{t=1}^{T-k} \Delta_k a_t \Delta_k b_t
-$$
+$$\frac{1}{T}\sum_{t=1}^T(a_t-\bar{a})(b_t-\bar{b})= \frac{1}{T^2}\sum_{k=1}^{T-1}\sum_{t=1}^{T-k} \Delta_k a_t \Delta_k b_t$$
 :::
 
 ## Grading

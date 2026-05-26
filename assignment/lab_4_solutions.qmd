@@ -1,5 +1,5 @@
 ---
-title: "Lab 4 - The Models package"
+title: "Lab 4"
 subtitle: "SOLUTIONS"
 editor: visual
 reference-location: margin
@@ -82,10 +82,10 @@ ames_test  <- rsample::testing(data_split)
 
 create a recipe based on the formula **Sale_Price \~ Longitude + Latitude + Lot_Area + Neighborhood + Year_Sold** with the following steps:
 
--   transform the outcome variable `Sale_Price` to `log(Sale_Price)` (natural log)
--   center and scale all numeric predictors
--   transform the categorical variable `Neighborhood` to pool infrequent values (see `recipes::step_other`)
--   create dummy variables for all nominal predictors
+- transform the outcome variable `Sale_Price` to `log(Sale_Price)` (natural log)
+- center and scale all numeric predictors
+- transform the categorical variable `Neighborhood` to pool infrequent values (see `recipes::step_other`)
+- create dummy variables for all nominal predictors
 
 Finally prep the recipe.
 
@@ -141,9 +141,9 @@ ames_train |>
 
 Create three regression models using the `parsnip::` package and assign each model to its own variable
 
--   a base regression model using `lm`
--   a regression model using `glmnet`; set the model parameters `penalty` and `mixture` for tuning
--   a tree model using the `ranger` engine; set the model parameters `min_n` and `trees` for tuning
+- a base regression model using `lm`
+- a regression model using `glmnet`; set the model parameters `penalty` and `mixture` for tuning
+- a tree model using the `ranger` engine; set the model parameters `min_n` and `trees` for tuning
 
 ::: {#Q4 .callout-note appearance="simple" icon="false"}
 ## SOLUTION Q4:
