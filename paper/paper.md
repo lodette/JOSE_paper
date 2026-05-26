@@ -26,7 +26,7 @@ bibliography: paper.bib
 
 This paper presents an open-source, LLM-based system for automatically grading long-form, mixed-format student assignments. The system processes student submissions in batch, returning a numeric grade and written feedback for each question, and is implemented in both R and Python. A JSON rubric schema and companion generation script allow instructors to define structured grading criteria without modifying the underlying code. The software is suited both for self-learning and for adoption by instructors who use text-based assignments to assess coding skills and conceptual understanding, and is particularly relevant in higher education settings where class sizes and time constraints make manual grading impractical.
 
-The materials are licensed under the GPL-3 and have been made publicly available at: <https://github.com/lodette/JOSE_paper>, <https://doi.org/10.5281/zenodo.19410580> (code), and <https://doi.org/10.5281/zenodo.20316269> (data).
+The materials are licensed under the GPL-3 and have been made publicly available at: <https://github.com/lodette/JOSE_paper>, <https://doi.org/10.5281/zenodo.19410579> (code), and <https://doi.org/10.5281/zenodo.20316269> (data).
 
 # Statement of Need
 
